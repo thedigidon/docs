@@ -1,0 +1,159 @@
+---
+title: "Agent Integration"
+description: "How any AI agent — Claude, GPT, Gemini, open-source, or custom — can discover and integrate with Appearance data."
+---
+
+## Discovery
+
+Appearance is designed to be discovered and consumed by AI agents through standard protocols. No vendor lock-in — any agent that speaks these protocols can integrate.
+
+### MCP Server
+
+The Appearance docs include an auto-generated [Model Context Protocol](https://modelcontextprotocol.io) server. Any MCP-compatible client can search our documentation directly.
+
+**Server URL:** `https://docs.appearance.app/mcp`
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add --transport http appearance https://docs.appearance.app/mcp
+    ```
+  </Tab>
+  <Tab title="Cursor">
+    Add to your `mcp.json`:
+    ```json
+    {
+      "mcpServers": {
+        "appearance": {
+          "url": "https://docs.appearance.app/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="VS Code">
+    Create `.vscode/mcp.json`:
+    ```json
+    {
+      "servers": {
+        "appearance": {
+          "type": "http",
+          "url": "https://docs.appearance.app/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### llms.txt
+
+Our entire documentation is available as a single markdown file at:
+
+```
+https://docs.appearance.app/llms.txt
+https://docs.appearance.app/llms-full.txt
+```
+
+Any LLM can ingest `llms-full.txt` in one request to understand the complete Appearance API.
+
+### OpenAPI Spec
+
+The machine-readable API contract is available at:
+
+```
+https://docs.appearance.app/api-reference/openapi.json
+```
+
+Any agent framework that supports OpenAPI (LangChain, CrewAI, AutoGen, etc.) can parse this spec and generate tool definitions automatically.
+
+## Integration Patterns
+
+### Pattern 1: Tool Use
+
+The agent has Appearance as a tool it can call during conversations.
+
+```
+User: "I want to get a new haircut. What would work for me?"
+Agent: [calls Appearance API — GET /v1/users/me/card]
+Agent: "Based on your profile, you have type 3B curly hair with thick density.
+        Let me find compatible styles..."
+Agent: [calls Appearance API — GET /v1/recommendations?zone=hair]
+Agent: "Here are 5 styles that work with your texture. The top match scores
+        82/90 — strong on texture (30/30) and face shape (15/15)."
+```
+
+### Pattern 2: Context Enrichment
+
+The agent fetches the user's appearance data to personalize other tasks.
+
+```
+Agent building a travel packing list:
+  → Fetches user's Appearance Card
+  → Knows user has curly hair, type 3B
+  → Recommends curl-friendly travel products
+  → Suggests styles that work in humid destinations
+```
+
+### Pattern 3: Compatibility Check
+
+The agent checks whether a specific offering works for a user.
+
+```
+Nail salon agent:
+  → User browsing nail designs
+  → Agent calls POST /v1/compatibility/check with user token + offering ID
+  → Gets back: { total: 78, tiers: { texture: 30, faceShape: 15, ... } }
+  → "This design complements your warm undertone and overall aesthetic."
+```
+
+## API Authentication
+
+All API calls require two credentials:
+
+| Credential | Header | Purpose |
+|-----------|--------|---------|
+| **API Key** | `X-Appearance-API-Key: ak_...` | Identifies your app |
+| **User Token** | `Authorization: Bearer at_...` | Identifies the consenting user |
+
+The API Key identifies your application. The Bearer token comes from the user completing the "Sign in with Appearance" OAuth flow.
+
+## Response Format
+
+All API responses use **structured, enumerated fields** — no free-text parsing needed. An agent can reliably extract and compare values.
+
+```json
+{
+  "card": {
+    "textureFamily": 3,
+    "density": "thick",
+    "faceShape": "oval",
+    "holdRequired": "medium"
+  },
+  "compatibility": {
+    "total": 78,
+    "tiers": {
+      "nature": 0,
+      "texture": 30,
+      "length": 20,
+      "density": 7,
+      "coverage": 0,
+      "faceShape": 15,
+      "styleDim": 6
+    }
+  }
+}
+```
+
+Every field is typed and constrained to a known set of values. Agents can use these values directly in logic without natural language interpretation.
+
+## Rate Limits
+
+| Scope | Limit |
+|-------|-------|
+| Per API key | 60 requests/minute (free tier) |
+| Per user token | 120 requests/minute |
+
+Rate limit headers are included in every response:
+- `X-RateLimit-Remaining`
+- `X-RateLimit-Reset`

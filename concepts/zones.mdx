@@ -1,0 +1,75 @@
+---
+title: "Zones"
+description: "Appearance is organized by appearance zones — independent verticals that each capture a different aspect of how you look."
+---
+
+## What are Zones?
+
+An Appearance Zone is an independent vertical of human appearance. Each zone has its own data model, business types, and matching logic.
+
+```typescript
+type AppearanceZone = 'hair' | 'glasses' | 'nails' | 'tattoos'
+```
+
+## Zone Registry
+
+| Zone | Status | Business Types | Model |
+|------|--------|---------------|-------|
+| **Hair** | Live | Barbershop, Salon | Style (provider uploads work, clients try on) |
+| **Glasses** | Live | Optician | Product (catalog-based, measurement fitting) |
+| **Nails** | Planned | Nail Studio | Style |
+| **Tattoos** | Planned | Tattoo Parlor | Style |
+
+## Business Types
+
+Each zone is served by one or more business types. Business types determine the UX copy, categories, and matching approach.
+
+| Business Type | Zone | Categories |
+|--------------|------|------------|
+| `barbershop` | Hair | Fade, Taper, Textured, Classic, Creative, Buzz, Long |
+| `salon` | Hair | Bob, Layers, Balayage, Blowout, Updo, Pixie, Long |
+| `optician` | Glasses | Rectangular, Round, Aviator, Cat Eye, Square, Oval |
+| `nail_studio` | Nails | Coming soon |
+| `tattoo_parlor` | Tattoos | Coming soon |
+
+## Business Models
+
+Two models determine how offerings work:
+
+| Model | Description | Business Types |
+|-------|-------------|---------------|
+| **Style** | Provider uploads photos of their work. Users try them on with AI generation. | Barbershop, Salon, Nail Studio, Tattoo Parlor |
+| **Product** | Business has a product catalog. Users try on individual products. | Optician |
+
+## Zone-Aware Matching
+
+Each zone uses different matching strategies:
+
+**Hair** — Card-based structured matching (texture, length, density, face shape) at 90% weight + embedding aesthetic similarity at 10%.
+
+**Glasses** — Measurement-based fitting (pupillary distance, face width, bridge width) at 60% weight + face shape compatibility at 25% + embedding similarity at 15%.
+
+**Nails / Tattoos** — Planned. Expected to lean heavily on aesthetic matching (embedding similarity) since physical compatibility constraints are minimal.
+
+## Zone in API Responses
+
+Every Appearance Card, Profile, and Recommendation includes a `zone` field. When consuming the API, filter by zone to get relevant data:
+
+```json
+// User's hair card
+{
+  "cardType": "user",
+  "zone": "hair",
+  "textureFamily": 3,
+  "faceShape": "oval"
+}
+
+// User's glasses profile
+{
+  "zone": "glasses",
+  "binocularPdMm": 64,
+  "frameSize": "medium"
+}
+```
+
+Zone-specific fields are `null` when they don't apply. For example, `textureFamily` is always `null` on a glasses card.

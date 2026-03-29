@@ -1,216 +1,434 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "OpenAPI Plant Store",
-    "description": "A sample API that uses a plant store as an example to demonstrate features in the OpenAPI specification",
-    "license": {
-      "name": "MIT"
-    },
-    "version": "1.0.0"
+    "title": "Appearance API",
+    "description": "The canonical appearance profile API. Access structured appearance data, check compatibility between users and offerings, and get personalized recommendations.",
+    "version": "0.1.0",
+    "contact": {
+      "name": "Appearance Developer Support",
+      "email": "developers@appearance.app"
+    }
   },
   "servers": [
     {
-      "url": "http://sandbox.mintlify.com"
+      "url": "https://api.appearance.app/v1",
+      "description": "Production"
     }
   ],
   "security": [
     {
+      "apiKey": [],
       "bearerAuth": []
     }
   ],
   "paths": {
-    "/plants": {
+    "/users/me/card": {
       "get": {
-        "description": "Returns all plants from the system that the user has access to",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "The maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
+        "summary": "Get user's Appearance Card",
+        "description": "Returns the authenticated user's Appearance Card — a structured representation of their appearance attributes used for compatibility matching.",
+        "operationId": "getUserCard",
+        "tags": ["Users"],
         "responses": {
           "200": {
-            "description": "Plant response",
+            "description": "User's Appearance Card",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Plant"
+                  "$ref": "#/components/schemas/AppearanceCard"
+                },
+                "example": {
+                  "cardType": "user",
+                  "zone": "hair",
+                  "audience": "masculine",
+                  "textureFamily": 3,
+                  "textureType": "3B",
+                  "supportedTextures": null,
+                  "lengths": { "top": "short", "sides": "short" },
+                  "density": "thick",
+                  "supportedDensities": null,
+                  "cutFamily": "fade",
+                  "styleNature": "natural",
+                  "coverage": "full",
+                  "exposes": null,
+                  "faceShape": "oval",
+                  "suitedFaceShapes": null,
+                  "colorTechnique": null,
+                  "layeringMethod": null,
+                  "stylingMethod": null,
+                  "volumeLevel": null,
+                  "holdRequired": null,
+                  "shineLevel": null,
+                  "dailyStylingTime": null,
+                  "supportedStrandThicknesses": null,
+                  "frameSizeCategory": null,
+                  "bridgeCategory": null,
+                  "frameShape": null,
+                  "computedAt": "2026-03-29T10:30:00Z",
+                  "cardVersion": 1
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "User has no appearance card (no scan completed)"
+          }
+        }
+      }
+    },
+    "/users/me/profile": {
+      "get": {
+        "summary": "Get user's Appearance Profile",
+        "description": "Returns the authenticated user's full Appearance Profile — 50+ fields across hair, structural measurements, and glasses zones.",
+        "operationId": "getUserProfile",
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "User's Appearance Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceProfile"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "User has no appearance profile (no scan completed)"
+          }
+        }
+      }
+    },
+    "/users/me/identity": {
+      "get": {
+        "summary": "Get user's Visual Identity",
+        "description": "Returns the user's Visual Identity Snapshot — a compact representation with scan URL, face shape, and key attributes.",
+        "operationId": "getUserIdentity",
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "Visual Identity Snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualIdentitySnapshot"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/compatibility/check": {
+      "post": {
+        "summary": "Check compatibility",
+        "description": "Scores compatibility between the authenticated user and an offering. Returns a total score (0-90) and a per-tier breakdown explaining exactly where points came from.",
+        "operationId": "checkCompatibility",
+        "tags": ["Compatibility"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["offeringId"],
+                "properties": {
+                  "offeringId": {
+                    "type": "string",
+                    "description": "The offering to check compatibility against"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compatibility score with tier breakdown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailedCardScore"
+                },
+                "example": {
+                  "total": 78,
+                  "tiers": {
+                    "nature": 0,
+                    "texture": 30,
+                    "length": 20,
+                    "density": 7,
+                    "coverage": 0,
+                    "faceShape": 15,
+                    "styleDim": 6
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a new plant in the store",
-        "requestBody": {
-          "description": "Plant to add to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "plant response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Plant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": {
+            "description": "Offering not found"
           }
         }
       }
     },
-    "/plants/{id}": {
-      "delete": {
-        "description": "Deletes a single plant based on the ID supplied",
+    "/recommendations": {
+      "get": {
+        "summary": "Get recommendations",
+        "description": "Returns personalized style recommendations for the authenticated user. Only offerings passing the quality gate (score >= 65) are returned, each with a full tier breakdown.",
+        "operationId": "getRecommendations",
+        "tags": ["Recommendations"],
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "description": "ID of plant to delete",
+            "name": "zone",
+            "in": "query",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
+              "type": "string",
+              "enum": ["hair", "glasses"]
+            },
+            "description": "Appearance zone to get recommendations for"
+          },
+          {
+            "name": "businessId",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Optional: limit to a specific business"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10, "maximum": 50 },
+            "description": "Maximum number of recommendations to return"
           }
         ],
         "responses": {
-          "204": {
-            "description": "Plant deleted",
-            "content": {}
-          },
-          "400": {
-            "description": "unexpected error",
+          "200": {
+            "description": "List of recommended offerings with scores",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "object",
+                  "properties": {
+                    "recommendations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Recommendation"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "recommendations": [
+                    {
+                      "offeringId": "abc123",
+                      "businessId": "biz456",
+                      "score": 82.5,
+                      "compatible": true,
+                      "tiers": {
+                        "nature": 0,
+                        "texture": 24,
+                        "length": 20,
+                        "density": 15,
+                        "coverage": 0,
+                        "faceShape": 15,
+                        "styleDim": 6
+                      }
+                    }
+                  ]
                 }
               }
             }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/offerings/{offeringId}": {
+      "get": {
+        "summary": "Get offering details",
+        "description": "Returns details about a specific offering including its Appearance Card.",
+        "operationId": "getOffering",
+        "tags": ["Offerings"],
+        "parameters": [
+          {
+            "name": "offeringId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Offering details with Appearance Card",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offering"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offering not found"
           }
         }
       }
-    }
-  },
-  "webhooks": {
-    "/plant/webhook": {
-      "post": {
-        "description": "Information about a new plant added to the store",
-        "requestBody": {
-          "description": "Plant added to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
+    },
+    "/offerings/{offeringId}/card": {
+      "get": {
+        "summary": "Get offering's Appearance Card",
+        "description": "Returns just the Appearance Card for an offering — the structured attributes used for compatibility matching.",
+        "operationId": "getOfferingCard",
+        "tags": ["Offerings"],
+        "parameters": [
+          {
+            "name": "offeringId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
           }
-        },
+        ],
         "responses": {
           "200": {
-            "description": "Return a 200 status to indicate that the data was received successfully"
+            "description": "Offering's Appearance Card",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppearanceCard"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offering not found"
           }
         }
       }
     }
   },
   "components": {
-    "schemas": {
-      "Plant": {
-        "required": [
-          "name"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "description": "The name of the plant",
-            "type": "string"
-          },
-          "tag": {
-            "description": "Tag to specify the type",
-            "type": "string"
-          }
-        }
-      },
-      "NewPlant": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Plant"
-          },
-          {
-            "required": [
-              "id"
-            ],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Identification number of the plant",
-                "type": "integer",
-                "format": "int64"
-              }
-            }
-          }
-        ]
-      },
-      "Error": {
-        "required": [
-          "error",
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Appearance-API-Key",
+        "description": "Your Appearance API key (ak_...)"
+      },
       "bearerAuth": {
         "type": "http",
-        "scheme": "bearer"
+        "scheme": "bearer",
+        "description": "User's access token from Sign in with Appearance OAuth flow"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing or invalid API key / user token"
+      }
+    },
+    "schemas": {
+      "AppearanceCard": {
+        "type": "object",
+        "description": "Universal structured representation of a user's appearance or an offering's requirements. Matching is card-vs-card.",
+        "properties": {
+          "cardType": { "type": "string", "enum": ["user", "offering"] },
+          "zone": { "type": "string", "enum": ["hair", "glasses", "nails", "tattoos"] },
+          "audience": { "type": ["string", "null"], "enum": ["masculine", "feminine", "androgynous", null] },
+          "textureFamily": { "description": "1=Straight, 2=Wavy, 3=Curly, 4=Coily, or 'bald'" },
+          "textureType": { "type": ["string", "null"], "description": "Andre Walker subtype: '3C', '2A', '4B'" },
+          "supportedTextures": { "type": ["array", "null"], "items": {}, "description": "Offering only: texture families this style works for" },
+          "lengths": { "type": ["object", "null"], "properties": { "top": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] }, "sides": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] } } },
+          "density": { "type": ["string", "null"], "enum": ["thin", "medium", "thick", null] },
+          "supportedDensities": { "type": ["array", "null"], "items": { "type": "string", "enum": ["thin", "medium", "thick"] } },
+          "cutFamily": { "type": ["string", "null"], "enum": ["fade", "taper", "buzz", "scissor", "longer_scissor", "other", null] },
+          "styleNature": { "type": ["string", "null"], "enum": ["natural", "protective", "heat-styled", null] },
+          "coverage": { "type": ["string", "null"], "enum": ["full", "thinning", "sparse", "patchy", null] },
+          "exposes": { "type": ["object", "null"], "properties": { "temples": { "type": "boolean" }, "hairline": { "type": "boolean" }, "crown": { "type": "boolean" } } },
+          "faceShape": { "type": ["string", "null"], "enum": ["oval", "round", "square", "diamond", "heart", "oblong", null] },
+          "suitedFaceShapes": { "type": ["array", "null"], "items": { "type": "string", "enum": ["oval", "round", "square", "diamond", "heart", "oblong"] } },
+          "colorTechnique": { "type": ["string", "null"], "description": "e.g. 'balayage', 'highlights', 'ombre'" },
+          "layeringMethod": { "type": ["string", "null"], "description": "e.g. 'long layers', 'blunt cut'" },
+          "stylingMethod": { "type": ["string", "null"], "description": "e.g. 'blowout', 'air-dried'" },
+          "volumeLevel": { "type": ["string", "null"], "enum": ["flat", "low", "medium", "high", "voluminous", null] },
+          "holdRequired": { "type": ["string", "null"], "enum": ["low", "medium", "high", null], "description": "Offering only: daily product/hold needed" },
+          "shineLevel": { "type": ["string", "null"], "enum": ["matte", "satin", "high-shine", null], "description": "Offering only: visual finish" },
+          "dailyStylingTime": { "type": ["string", "null"], "enum": ["quick", "moderate", "involved", null], "description": "Offering only: morning routine effort" },
+          "supportedStrandThicknesses": { "type": ["array", "null"], "items": { "type": "string", "enum": ["fine", "medium", "coarse"] }, "description": "Offering only" },
+          "frameSizeCategory": { "type": ["string", "null"], "enum": ["small", "medium", "large", "extra-large", null] },
+          "bridgeCategory": { "type": ["string", "null"], "enum": ["narrow", "medium", "wide", null] },
+          "frameShape": { "type": ["string", "null"] },
+          "computedAt": { "type": "string", "format": "date-time" },
+          "cardVersion": { "type": "integer", "const": 1 }
+        }
+      },
+      "DetailedCardScore": {
+        "type": "object",
+        "description": "Compatibility score with per-tier breakdown",
+        "properties": {
+          "total": { "type": "number", "description": "Total compatibility score (0-90)" },
+          "tiers": {
+            "type": "object",
+            "properties": {
+              "nature": { "type": "number", "description": "Style nature match (0 or negative penalty)" },
+              "texture": { "type": "number", "description": "Texture compatibility (0-30)" },
+              "length": { "type": "number", "description": "Length achievability (0-20)" },
+              "density": { "type": "number", "description": "Density match (0-15)" },
+              "coverage": { "type": "number", "description": "Coverage gate (0 or negative penalty)" },
+              "faceShape": { "type": "number", "description": "Face shape suitability (0-15)" },
+              "styleDim": { "type": "number", "description": "Style dimension proximity (0-10)" }
+            }
+          }
+        }
+      },
+      "Recommendation": {
+        "type": "object",
+        "description": "A recommended offering with compatibility score and tier breakdown",
+        "properties": {
+          "offeringId": { "type": "string" },
+          "businessId": { "type": "string" },
+          "score": { "type": "number", "description": "Combined score: 90% card + 10% embedding" },
+          "compatible": { "type": "boolean", "description": "Whether this passed the quality gate (>= 65)" },
+          "tiers": { "$ref": "#/components/schemas/DetailedCardScore/properties/tiers" }
+        }
+      },
+      "Offering": {
+        "type": "object",
+        "description": "A business offering (style or product)",
+        "properties": {
+          "id": { "type": "string" },
+          "businessId": { "type": "string" },
+          "businessName": { "type": "string" },
+          "zone": { "type": "string", "enum": ["hair", "glasses", "nails", "tattoos"] },
+          "styleName": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "category": { "type": ["string", "null"] },
+          "coverImageUrl": { "type": "string", "format": "uri" },
+          "card": { "$ref": "#/components/schemas/AppearanceCard" }
+        }
+      },
+      "AppearanceProfile": {
+        "type": "object",
+        "description": "Complete appearance profile with 50+ fields across hair, structural, and glasses zones.",
+        "properties": {
+          "hair": { "type": ["object", "null"], "description": "Hair zone profile (texture, lengths, color, condition, facial hair)" },
+          "glasses": { "type": ["object", "null"], "description": "Glasses zone profile (PD, face width, frame size)" },
+          "structural": { "type": ["object", "null"], "description": "Cross-zone structural measurements (face shape, dimensions, skin tone)" },
+          "lastAnalyzedAt": { "type": "string", "format": "date-time" },
+          "schemaVersion": { "type": "integer" }
+        }
+      },
+      "VisualIdentitySnapshot": {
+        "type": "object",
+        "description": "Compact visual identity for Sign in with Appearance",
+        "properties": {
+          "scanUrl": { "type": "string", "format": "uri", "description": "Signed URL to the user's scan grid image" },
+          "scanCreatedAt": { "type": "string", "format": "date-time" },
+          "faceShape": { "type": "string" },
+          "hairProfile": { "type": ["object", "null"], "description": "Compact hair profile snapshot" },
+          "schemaVersion": { "type": "integer" }
+        }
       }
     }
   }

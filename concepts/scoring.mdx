@@ -1,0 +1,145 @@
+---
+title: "Compatibility Scoring"
+description: "A 6-tier scoring engine that explains exactly why a style works or doesn't work for someone. Returns structured breakdowns, not black-box numbers."
+---
+
+## Overview
+
+The Appearance scoring engine compares a user's Appearance Card against an offering's Appearance Card and returns a **per-tier breakdown** explaining exactly why a style is or isn't compatible.
+
+This is not a black box. Every score comes with a `tiers` object that breaks down exactly where the points came from.
+
+```json
+{
+  "total": 78,
+  "tiers": {
+    "nature": 0,
+    "texture": 30,
+    "length": 20,
+    "density": 7,
+    "coverage": 0,
+    "faceShape": 15,
+    "styleDim": 6
+  }
+}
+```
+
+## The 6 Tiers
+
+### Tier 0: Nature Match (Penalty)
+
+Checks whether the offering's style nature (natural, protective, heat-styled) conflicts with the user's hair. This is **texture-aware** — protective styles like braids and locs are natural for curly/coily hair but a bigger commitment for straight hair.
+
+| User Texture | Offering Nature | Penalty | Reasoning |
+|-------------|----------------|---------|-----------|
+| Curly/Coily (3-4) | Protective (braids, locs) | -2 | Natural for this hair type |
+| Straight/Wavy (1-2) | Protective | -12 | Bigger commitment |
+| Curly/Coily (3-4) | Heat-styled (blowout) | -12 | Against the grain |
+| Straight/Wavy (1-2) | Heat-styled | -5 | Common routine |
+
+### Tier 1: Texture Match (0-30 points)
+
+The most important signal. Hair texture family (1=Straight, 2=Wavy, 3=Curly, 4=Coily) can't be changed — the offering must work WITH the user's natural texture.
+
+**Directional scoring:** Going with the grain (same or more textured) scores higher than going against (less textured, which requires straightening/heat).
+
+| Distance | With Grain | Against Grain |
+|----------|-----------|--------------|
+| Exact match | 30 | 30 |
+| 1 step | 24 | 8 |
+| 2 steps | 18 | 2 |
+| 3 steps | 12 | 0 |
+
+**Subtype bonus:** Within the same family, closer Andre Walker subtypes score better. User 3C + Offering 3C = no penalty. User 3C + Offering 3A = -4 points.
+
+### Tier 2: Length (0-20 points)
+
+Can the user achieve this style with their current hair length?
+
+| Condition | Points |
+|-----------|--------|
+| User length >= offering requirement | 20 |
+| User is 1 step short (can grow into it) | 8 |
+| User is 2+ steps short | 0 |
+
+Length ordinal: `bald(0) → stubble(1) → short(2) → medium(3) → long(4)`
+
+### Tier 3: Density (0-15 points)
+
+Does the user's hair density work with this style?
+
+| Condition | Points |
+|-----------|--------|
+| User's density in offering's `supportedDensities` | 15 |
+| No data on either side | 7 |
+| Density mismatch | 3 |
+
+### Coverage Gate (Penalty)
+
+Not a scored tier — a penalty for extreme cases. If the user has sparse/patchy coverage and the offering exposes the crown area, a -10 penalty applies.
+
+### Tier 4: Face Shape (0-15 points)
+
+Does the user's face shape match the offering's suited face shapes?
+
+| Condition | Points |
+|-----------|--------|
+| User's face shape in offering's `suitedFaceShapes` | 15 |
+| No data | 7 |
+| Face shape not listed | 3 |
+
+### Tier 5: Style Dimension (0-10 points)
+
+Scored differently for barbershop vs. salon styles:
+
+**Barbershop (masculine):** Cut family proximity — fade, taper, buzz, scissor. Adjacent families score higher.
+
+| Condition | Points |
+|-----------|--------|
+| Same cut family | 10 |
+| Adjacent family (fade↔taper, taper↔scissor) | 6 |
+| Non-adjacent | 2 |
+
+**Salon (feminine):** Combines three sub-scores:
+- Color technique match (0-3): exact match, adjacent technique, or unknown
+- Styling method match (0-3): exact match, adjacent method, or unknown
+- Volume-density compatibility (0-4): thin hair + low volume = natural fit
+
+## Combined Score
+
+The final recommendation score combines card scoring with embedding similarity:
+
+```
+finalScore = (cardScore * 0.90) + (embeddingSimilarity * 100 * 0.10)
+```
+
+- **90% card match** — structured, explainable compatibility
+- **10% embedding** — aesthetic "vibe" similarity (captures style qualities that can't be enumerated)
+
+## Quality Gate
+
+Only offerings scoring **65 or above** pass the quality gate and appear in recommendations. This prevents showing fundamentally incompatible styles. If no styles pass the gate for a user at a particular business, the app shows "No styles match your profile here."
+
+## API Response Format
+
+The compatibility endpoint returns the full breakdown:
+
+```json
+{
+  "offeringId": "abc123",
+  "businessId": "biz456",
+  "score": 82.5,
+  "compatible": true,
+  "tiers": {
+    "nature": 0,
+    "texture": 24,
+    "length": 20,
+    "density": 15,
+    "coverage": 0,
+    "faceShape": 15,
+    "styleDim": 6
+  }
+}
+```
+
+This lets consuming apps explain **why** a recommendation was made, not just show a number.

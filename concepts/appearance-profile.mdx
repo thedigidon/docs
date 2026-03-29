@@ -1,0 +1,128 @@
+---
+title: "Appearance Profile"
+description: "The full picture of a user's appearance — 50+ fields across hair, structural measurements, and glasses, built from AI-analyzed multi-angle scans."
+---
+
+## What is an Appearance Profile?
+
+An Appearance Profile is the **complete, consolidated record** of everything Appearance knows about a user's appearance. It's built from multi-angle head scans analyzed by AI vision (Gemini) combined with ARKit facial landmark measurements.
+
+The profile is organized by **zone** — hair, glasses, and structural (cross-zone measurements). Each zone captures different aspects of appearance.
+
+## How Profiles Are Built
+
+1. **User performs a scan** — 6-angle head capture using the device camera + ARKit face tracking
+2. **AI analyzes the scan** — Gemini Flash vision model extracts structured attributes from photos
+3. **ARKit provides measurements** — Face width, jaw width, forehead height, inter-ocular distance
+4. **Server consolidates** — A Cloud Function merges AI analysis + ARKit data into a single profile document
+
+Profiles are **read-only** (auto-generated from scans) with a small set of **user-editable fields** for information AI can't detect from photos.
+
+## Hair Zone
+
+The richest zone, with ~50 fields across 9 categories.
+
+### Texture & Structure
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `textureFamily` | `1 \| 2 \| 3 \| 4 \| 'bald'` | Andre Walker classification (1=Straight, 4=Coily) |
+| `textureType` | `string` | Subtype like `'3B'`, `'2A'`, `'4C'` |
+| `textureLabel` | `string` | Human-readable: `'Straight'`, `'Wavy'`, `'Curly'`, `'Coily'` |
+| `density` | `'thin' \| 'medium' \| 'thick'` | Hair density |
+| `strandThickness` | `'fine' \| 'medium' \| 'coarse' \| null` | Individual strand diameter |
+
+### Current Lengths
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lengths.top` | `LengthBucket` | Current top length |
+| `lengths.sides` | `LengthBucket` | Current side length |
+| `lengths.back` | `LengthBucket` | Current back length |
+| `lengths.fringe` | `LengthBucket \| null` | Fringe/bangs length if present |
+
+### Color
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `naturalColor` | `string` | Natural hair color |
+| `currentColor` | `string \| null` | Current color (if different from natural) |
+| `isColorTreated` | `boolean` | Whether hair is dyed/treated |
+| `undertone` | `'warm' \| 'cool' \| 'neutral' \| null` | Color undertone |
+
+### Hairline & Coverage
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `hairlineShape` | `string` | Hairline shape description |
+| `templeRecession` | `string` | Temple recession level |
+| `crownThinning` | `string` | Crown thinning status |
+| `coverage` | `string` | Overall coverage level |
+
+### Facial Hair
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `facialHair.hasBeard` | `boolean` | Whether user has a beard |
+| `facialHair.beardType` | `string` | Beard style |
+| `facialHair.beardColor` | `string \| null` | Beard color |
+| `facialHair.connectsToSideburns` | `boolean` | Sideburn connection |
+
+### Condition & Health
+
+| Field | Type | Source |
+|-------|------|--------|
+| `damageLevel` | `'virgin' \| 'mild' \| 'moderate' \| 'severe' \| null` | AI-detected |
+| `porosity` | `'low' \| 'normal' \| 'high' \| null` | User-editable |
+| `elasticity` | `'low' \| 'normal' \| 'high' \| null` | User-editable |
+
+### User-Editable Fields
+
+These fields can't be detected from photos and are set by the user:
+
+- `porosity` — How well hair absorbs moisture
+- `elasticity` — How well hair returns to shape when stretched
+- `chemicalHistory` — Past chemical treatments (relaxers, perms)
+- `colorHistory` — Color treatment history
+- `heatStylingFrequency` — `'never' | 'occasional' | 'regular' | 'daily'`
+
+## Structural Zone (Cross-Zone)
+
+Physical measurements that apply across all zones.
+
+| Field | Type | Source |
+|-------|------|--------|
+| `faceShape` | `string` | AI-detected from photos |
+| `faceWidth` | `number \| null` | ARKit measurement (mm) |
+| `faceHeight` | `number \| null` | ARKit measurement (mm) |
+| `jawWidth` | `number \| null` | ARKit measurement (mm) |
+| `skinTone.fitzpatrick` | `string` | Fitzpatrick scale classification |
+| `skinTone.undertone` | `string` | Warm, cool, or neutral |
+| `skinTone.description` | `string` | Human-readable description |
+
+## Glasses Zone
+
+Measurement-based fitting data for eyewear.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `binocularPdMm` | `number \| null` | Pupillary distance in mm |
+| `faceWidthMm` | `number \| null` | Face width for frame sizing |
+| `bridgeWidthMm` | `number \| null` | Nose bridge width |
+| `frameSize` | `'small' \| 'medium' \| 'large' \| 'extra-large' \| null` | Recommended frame size |
+| `wearsPrescription` | `boolean` | Whether user wears prescription lenses |
+
+## Profile vs. Card
+
+The **Appearance Profile** is the full data set — 50+ fields, detailed measurements, user-editable fields, source metadata. It's what you'd want for deep personalization.
+
+The **Appearance Card** is a compact, standardized extract — ~25 fields, enum-only values, designed for fast card-vs-card matching. It's what you'd want for compatibility scoring.
+
+| | Profile | Card |
+|--|---------|------|
+| **Fields** | 50+ | ~25 |
+| **Values** | Mixed (strings, numbers, objects) | Enums only |
+| **Purpose** | Deep personalization | Fast matching |
+| **User-editable fields** | Yes | No |
+| **Measurements** | Yes (mm) | No |
+| **API Scope** | `appearance:profile` | `appearance:card` |
