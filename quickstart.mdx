@@ -1,11 +1,11 @@
 ---
 title: "Quickstart"
-description: "Get started with the Appearance Developer Platform in 5 minutes."
+description: "Get your first user's appearance data in under 5 minutes."
 ---
 
 ## Overview
 
-The Appearance API lets you access a user's appearance data — hair type, face shape, style preferences — and check compatibility between users and offerings. Here's how to get started.
+The Appearance API gives you structured appearance data for any consenting user — hair type, face shape, density, coloring, measurements, and more. No questionnaires. No photo uploads. One API call.
 
 <Note>
   The Appearance API is currently in private beta. Request access at developers@appearance.app.
@@ -15,7 +15,7 @@ The Appearance API lets you access a user's appearance data — hair type, face 
 
 Request API access to receive:
 - **API Key** (`ak_...`) — identifies your application
-- **OAuth Client ID + Secret** — for "Sign in with Appearance" user flow
+- **OAuth Client ID + Secret** — for the "Sign in with Appearance" user flow
 
 ## Step 2: Authenticate a User
 
@@ -23,7 +23,7 @@ Implement the "Sign in with Appearance" OAuth flow to get a user's access token:
 
 ```bash
 # 1. Redirect user to Appearance authorization
-https://appearance.app/oauth/authorize?client_id=YOUR_ID&scope=profile,appearance:card&response_type=code
+https://appearance.app/oauth/authorize?client_id=YOUR_ID&scope=profile,appearance:profile&response_type=code
 
 # 2. Exchange the authorization code for tokens
 curl -X POST https://api.appearance.app/v1/oauth/token \
@@ -36,102 +36,73 @@ curl -X POST https://api.appearance.app/v1/oauth/token \
   }'
 ```
 
-## Step 3: Fetch the User's Appearance Card
+## Step 3: Fetch the User's Appearance Profile
 
 ```bash
-curl https://api.appearance.app/v1/users/me/card \
+curl https://api.appearance.app/v1/users/me/profile \
   -H "X-Appearance-API-Key: ak_your_key" \
   -H "Authorization: Bearer at_user_token"
 ```
 
-Response:
+Response — 50+ structured fields, from one face scan:
 ```json
 {
-  "cardType": "user",
-  "zone": "hair",
-  "textureFamily": 3,
-  "textureType": "3B",
-  "lengths": { "top": "short", "sides": "short" },
-  "density": "thick",
-  "faceShape": "oval",
-  "audience": "masculine",
-  "computedAt": "2026-03-29T10:30:00Z",
-  "cardVersion": 1
-}
-```
-
-## Step 4: Check Compatibility
-
-Compare the user against an offering:
-
-```bash
-curl -X POST https://api.appearance.app/v1/compatibility/check \
-  -H "X-Appearance-API-Key: ak_your_key" \
-  -H "Authorization: Bearer at_user_token" \
-  -H "Content-Type: application/json" \
-  -d '{ "offeringId": "off_abc123" }'
-```
-
-Response:
-```json
-{
-  "total": 78,
-  "tiers": {
-    "nature": 0,
-    "texture": 30,
-    "length": 20,
-    "density": 7,
-    "coverage": 0,
-    "faceShape": 15,
-    "styleDim": 6
-  }
-}
-```
-
-## Step 5: Get Recommendations
-
-Fetch personalized style recommendations:
-
-```bash
-curl "https://api.appearance.app/v1/recommendations?zone=hair&limit=10" \
-  -H "X-Appearance-API-Key: ak_your_key" \
-  -H "Authorization: Bearer at_user_token"
-```
-
-Response:
-```json
-{
-  "recommendations": [
-    {
-      "offeringId": "abc123",
-      "businessId": "biz456",
-      "score": 82.5,
-      "compatible": true,
-      "tiers": {
-        "nature": 0,
-        "texture": 24,
-        "length": 20,
-        "density": 15,
-        "coverage": 0,
-        "faceShape": 15,
-        "styleDim": 6
-      }
+  "hair": {
+    "textureFamily": 3,
+    "textureType": "3B",
+    "textureLabel": "Curly",
+    "density": "thick",
+    "strandThickness": "medium",
+    "lengths": { "top": "short", "sides": "short", "back": "short", "fringe": null },
+    "naturalColor": "black",
+    "isColorTreated": false,
+    "undertone": "neutral",
+    "faceShape": "oval",
+    "coverage": "full",
+    "facialHair": {
+      "hasBeard": true,
+      "beardType": "short stubble",
+      "connectsToSideburns": true
+    },
+    "currentCutFamily": "fade",
+    "canGoShorter": true,
+    "canFade": true,
+    "canLighten": true
+  },
+  "structural": {
+    "faceShape": "oval",
+    "faceWidth": 142.3,
+    "jawWidth": 126.1,
+    "skinTone": {
+      "fitzpatrick": "Type V",
+      "undertone": "warm",
+      "description": "Brown skin with warm undertone"
     }
-  ]
+  },
+  "glasses": {
+    "binocularPdMm": 63.5,
+    "faceWidthMm": 142.3,
+    "frameSize": "medium",
+    "wearsPrescription": false
+  },
+  "lastAnalyzedAt": "2026-03-29T10:30:00Z",
+  "schemaVersion": 2
 }
 ```
 
-## Next Steps
+That's it. Your app now knows what this user looks like — without asking them a single question.
+
+## What's Next
 
 <Columns cols={2}>
-  <Card title="Appearance Card" icon="id-card" href="/concepts/appearance-card">
-    Understand every field in the card schema.
+  <Card title="For AI Agents" icon="robot" href="/guides/agent-integration">
+    Connect any AI agent to Appearance data via MCP, REST, or OpenAPI.
   </Card>
-  <Card title="Scoring Engine" icon="chart-bar" href="/concepts/scoring">
-    Learn how the 6-tier compatibility scoring works.
+  <Card title="Sign in with Appearance" icon="fingerprint" href="/concepts/sign-in">
+    Understand the full OAuth flow and permission scopes.
   </Card>
-  <Card title="Agent Integration" icon="plug" href="/guides/agent-integration">
-    Connect AI agents to Appearance data.
+  <Card title="Profile Reference" icon="user" href="/concepts/appearance-profile">
+    Explore every field in the 50+ field profile schema.
   </Card>
   <Card title="API Reference" icon="terminal" href="/api-reference">
     Full endpoint documentation with interactive playground.

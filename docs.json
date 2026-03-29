@@ -18,23 +18,16 @@
             "group": "Getting Started",
             "pages": [
               "index",
-              "quickstart"
+              "quickstart",
+              "guides/agent-integration"
             ]
           },
           {
             "group": "Core Concepts",
             "pages": [
+              "concepts/sign-in",
               "concepts/appearance-profile",
-              "concepts/appearance-card",
-              "concepts/scoring",
-              "concepts/zones",
-              "concepts/sign-in"
-            ]
-          },
-          {
-            "group": "Guides",
-            "pages": [
-              "guides/agent-integration"
+              "concepts/appearance-card"
             ]
           }
         ]

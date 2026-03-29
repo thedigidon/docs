@@ -1,28 +1,28 @@
 ---
 title: "Appearance Card"
-description: "The structured data primitive for matching users to styles, products, and services. Every entity gets a card; matching is card-vs-card."
+description: "A compact, structured extract of a user's appearance — the lightweight format for quick reads and integrations that don't need the full profile."
 ---
 
 ## What is an Appearance Card?
 
-An Appearance Card is a **structured representation** of either a user's appearance or an offering's requirements. Every entity in the Appearance system — every user scan, every hairstyle, every pair of glasses — gets a card.
+An Appearance Card is a **compact extract** of a user's Appearance Profile — roughly 25 fields with enum-only values. It's the lightweight format for integrations that need quick access to key appearance attributes without the full 50+ field profile.
 
-Matching is **card-vs-card**: compare field A on the user card to field A on the offering card. Cards handle 90% of compatibility scoring. The remaining 10% comes from embedding-based aesthetic "vibe" matching.
+Think of it as the difference between a driver's license and a full medical record. The card gives you what you need for most decisions; the profile gives you everything.
 
-```
-User card: "I have texture family 3, short curly hair, oval face"
-Offering card: "I suit textures [2,3,4], need at least short hair, suit oval/round faces"
-→ Compatibility: 82/90
-```
+## When to Use Card vs. Profile
 
-## Card Types
+| | Card | Profile |
+|--|------|---------|
+| **Fields** | ~25 | 50+ |
+| **Values** | Enums only | Mixed (strings, numbers, objects) |
+| **Purpose** | Quick reads, lightweight integrations | Deep personalization |
+| **Measurements** | No | Yes (mm-precision from ARKit) |
+| **User-editable fields** | No | Yes |
+| **API Scope** | `appearance:card` | `appearance:profile` |
 
-Every card has a `cardType` field:
+**Use the Card** when you need key attributes fast — texture family, face shape, density, lengths. Most agent integrations and quick-read scenarios work well with the card.
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `user` | Generated from a user's appearance scan | "I have type 3B curly hair, medium density, oval face" |
-| `offering` | Generated from a business's uploaded style photos | "This fade suits textures 1-3, medium/thick density, square/oval faces" |
+**Use the Profile** when you need depth — exact face measurements in millimeters, hair condition data, growth patterns, skin tone analysis, glasses fitting. Deep personalization apps and health/beauty contexts benefit from the full profile.
 
 ## Schema
 
@@ -34,71 +34,43 @@ Every card has a `cardType` field:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `cardType` | `'user' \| 'offering'` | Which side of the match |
-| `zone` | `'hair' \| 'glasses' \| 'nails' \| 'tattoos'` | Which appearance zone |
-| `audience` | `'masculine' \| 'feminine' \| 'androgynous' \| null` | Target audience |
+| `cardType` | `'user'` | Always `user` for user-facing API |
+| `zone` | `'hair' \| 'glasses'` | Which appearance zone |
+| `audience` | `'masculine' \| 'feminine' \| 'androgynous' \| null` | Presentation preference |
 | `computedAt` | `string` (ISO 8601) | When this card was generated |
 | `cardVersion` | `1` | Schema version |
 
 ### Hair Fields
 
-| Field | User Card | Offering Card |
-|-------|-----------|---------------|
-| `textureFamily` | User's texture (1-4 or `'bald'`) | Offering's primary texture |
-| `textureType` | Andre Walker subtype (`'3C'`, `'2A'`) | Offering's subtype |
-| `supportedTextures` | — | Which texture families work (`[2, 3, 4]`) |
-| `lengths` | Current lengths `{ top, sides }` | Minimum lengths required |
-| `density` | `'thin' \| 'medium' \| 'thick'` | — |
-| `supportedDensities` | — | Which densities work (`['medium', 'thick']`) |
-| `cutFamily` | Current cut family | Offering's cut family |
-| `styleNature` | `'natural' \| 'protective' \| 'heat-styled'` | Same |
-| `coverage` | `'full' \| 'thinning' \| 'sparse' \| 'patchy'` | — |
-| `exposes` | — | `{ temples, hairline, crown }` booleans |
-| `faceShape` | Detected face shape | — |
-| `suitedFaceShapes` | — | Which face shapes this flatters |
+| Field | Type | Description |
+|-------|------|-------------|
+| `textureFamily` | `1 \| 2 \| 3 \| 4 \| 'bald'` | Andre Walker classification (1=Straight, 2=Wavy, 3=Curly, 4=Coily) |
+| `textureType` | `string \| null` | Subtype like `'3B'`, `'2A'`, `'4C'` |
+| `lengths` | `{ top, sides }` | Current lengths (`'bald' \| 'stubble' \| 'short' \| 'medium' \| 'long'`) |
+| `density` | `'thin' \| 'medium' \| 'thick' \| null` | Hair density |
+| `cutFamily` | `string \| null` | `'fade' \| 'taper' \| 'buzz' \| 'scissor' \| 'longer_scissor' \| 'other'` |
+| `styleNature` | `'natural' \| 'protective' \| 'heat-styled' \| null` | How the hair is maintained |
+| `coverage` | `'full' \| 'thinning' \| 'sparse' \| 'patchy' \| null` | Coverage level |
+| `faceShape` | `string \| null` | `'oval' \| 'round' \| 'square' \| 'diamond' \| 'heart' \| 'oblong'` |
 
-### Hair Enums
-
-```typescript
-TextureFamily = 1 | 2 | 3 | 4 | 'bald'
-// 1 = Straight, 2 = Wavy, 3 = Curly, 4 = Coily
-
-LengthBucket = 'bald' | 'stubble' | 'short' | 'medium' | 'long'
-
-FaceShape = 'oval' | 'round' | 'square' | 'diamond' | 'heart' | 'oblong'
-
-CutFamily = 'fade' | 'taper' | 'buzz' | 'scissor' | 'longer_scissor' | 'other'
-```
-
-### Salon Fields (Feminine-Leaning Styles)
+### Salon Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `colorTechnique` | `string \| null` | e.g. `'balayage'`, `'highlights'`, `'ombre'` |
-| `layeringMethod` | `string \| null` | e.g. `'long layers'`, `'blunt cut'`, `'graduated bob'` |
-| `stylingMethod` | `string \| null` | e.g. `'blowout'`, `'air-dried'`, `'flat-ironed'` |
+| `layeringMethod` | `string \| null` | e.g. `'long layers'`, `'blunt cut'` |
+| `stylingMethod` | `string \| null` | e.g. `'blowout'`, `'air-dried'` |
 | `volumeLevel` | `string \| null` | `'flat' \| 'low' \| 'medium' \| 'high' \| 'voluminous'` |
-
-### Style Properties (Offering Cards Only)
-
-These describe what a style is like to live with — not compatibility, but lifestyle fit.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `holdRequired` | `'low' \| 'medium' \| 'high' \| null` | How much product/hold needed daily |
-| `shineLevel` | `'matte' \| 'satin' \| 'high-shine' \| null` | Visual finish |
-| `dailyStylingTime` | `'quick' \| 'moderate' \| 'involved' \| null` | Morning routine effort |
-| `supportedStrandThicknesses` | `('fine' \| 'medium' \| 'coarse')[] \| null` | Which strand diameters work |
 
 ### Glasses Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `frameSizeCategory` | `'small' \| 'medium' \| 'large' \| 'extra-large' \| null` | Recommended frame size |
-| `bridgeCategory` | `'narrow' \| 'medium' \| 'wide' \| null` | Bridge width category |
+| `frameSizeCategory` | `string \| null` | `'small' \| 'medium' \| 'large' \| 'extra-large'` |
+| `bridgeCategory` | `string \| null` | `'narrow' \| 'medium' \| 'wide'` |
 | `frameShape` | `string \| null` | Frame shape description |
 
-## Example: User Card
+## Example Response
 
 ```json
 {
@@ -107,24 +79,16 @@ These describe what a style is like to live with — not compatibility, but life
   "audience": "masculine",
   "textureFamily": 3,
   "textureType": "3B",
-  "supportedTextures": null,
   "lengths": { "top": "short", "sides": "short" },
   "density": "thick",
-  "supportedDensities": null,
   "cutFamily": "fade",
   "styleNature": "natural",
   "coverage": "full",
-  "exposes": null,
   "faceShape": "oval",
-  "suitedFaceShapes": null,
   "colorTechnique": null,
   "layeringMethod": null,
   "stylingMethod": null,
   "volumeLevel": null,
-  "holdRequired": null,
-  "shineLevel": null,
-  "dailyStylingTime": null,
-  "supportedStrandThicknesses": null,
   "frameSizeCategory": null,
   "bridgeCategory": null,
   "frameShape": null,
@@ -133,45 +97,14 @@ These describe what a style is like to live with — not compatibility, but life
 }
 ```
 
-## Example: Offering Card
+## API Access
 
-```json
-{
-  "cardType": "offering",
-  "zone": "hair",
-  "audience": "masculine",
-  "textureFamily": 3,
-  "textureType": "3B",
-  "supportedTextures": [2, 3, 4],
-  "lengths": { "top": "short", "sides": "short" },
-  "density": null,
-  "supportedDensities": ["medium", "thick"],
-  "cutFamily": "fade",
-  "styleNature": "natural",
-  "coverage": null,
-  "exposes": { "temples": true, "hairline": true, "crown": false },
-  "faceShape": null,
-  "suitedFaceShapes": ["oval", "square", "diamond"],
-  "colorTechnique": null,
-  "layeringMethod": null,
-  "stylingMethod": null,
-  "volumeLevel": null,
-  "holdRequired": "medium",
-  "shineLevel": "matte",
-  "dailyStylingTime": "quick",
-  "supportedStrandThicknesses": ["medium", "coarse"],
-  "frameSizeCategory": null,
-  "bridgeCategory": null,
-  "frameShape": null,
-  "computedAt": "2026-03-29T10:30:00Z",
-  "cardVersion": 1
-}
+Fetch a user's card via the `appearance:card` scope:
+
+```bash
+curl https://api.appearance.app/v1/users/me/card \
+  -H "X-Appearance-API-Key: ak_your_key" \
+  -H "Authorization: Bearer at_user_token"
 ```
 
-## How Cards Are Built
-
-**User cards** are built from appearance scan data — a multi-angle head capture analyzed by AI vision (Gemini). The scan extracts texture family, density, lengths, face shape, and coverage from photos + ARKit facial landmarks.
-
-**Offering cards** are built from business-uploaded style photos. Gemini analyzes the reference photos and extracts structured attributes: what texture family the style was done on, what lengths it requires, what face shapes it flatters, and the new style properties (hold, shine, styling time).
-
-Both card types are computed server-side and stored in Firestore. Cards are never computed on the client — the server is the single source of truth.
+For the full 50+ field profile, see [Appearance Profile](/concepts/appearance-profile).

@@ -3,30 +3,38 @@ title: "Appearance Developer Platform"
 description: "The canonical appearance profile for every person. Build apps that understand how people look and want to look."
 ---
 
+Your users already know how they look. Appearance lets your app know too — with one tap of consent.
+
 ## What is Appearance?
 
-Appearance builds the **identity layer for how you look on the internet**. We capture, analyze, and structure everything about a person's appearance — from hair texture and face shape to style preferences and aesthetic identity — into a single, canonical profile.
+Appearance builds the **identity layer for how you look on the internet**. Users do one face scan, and we capture, analyze, and structure everything about their appearance — hair texture, face shape, density, coloring, measurements — into a single, canonical profile with 50+ structured fields.
 
-Any app that needs to understand what someone looks like, or how they want to look, can build on Appearance.
+Any app that needs to understand what someone looks like can read their Appearance profile with consent. No questionnaires. No photo uploads. No cold start.
 
 <Columns cols={2}>
-  <Card title="Appearance Card" icon="id-card" href="/concepts/appearance-card">
-    The structured data primitive for matching users to styles, products, and services.
+  <Card title="Sign in with Appearance" icon="fingerprint" href="/concepts/sign-in">
+    OAuth-based identity that shares how someone looks — not just an email address.
   </Card>
-  <Card title="Compatibility Scoring" icon="chart-bar" href="/concepts/scoring">
-    A 6-tier scoring engine that explains why a style works (or doesn't) for someone.
+  <Card title="For AI Agents" icon="robot" href="/guides/agent-integration">
+    Any agent can query appearance data via MCP, REST, or SDK. The first API consumers.
   </Card>
   <Card title="Appearance Profile" icon="user" href="/concepts/appearance-profile">
     50+ fields across hair, face, and structural measurements — the full picture.
   </Card>
-  <Card title="Sign in with Appearance" icon="fingerprint" href="/concepts/sign-in">
-    OAuth-based identity that shares how someone looks, not just their email.
+  <Card title="Appearance Card" icon="id-card" href="/concepts/appearance-card">
+    A compact, structured extract for quick reads and lightweight integrations.
   </Card>
 </Columns>
 
+## Why This Exists
+
+ChatGPT can ask a user what haircut they want. It can't remember what worked last time, measure their face shape, or track how their hair changes over six months. Every app that touches appearance starts from zero — questionnaires, photo uploads, guesswork.
+
+Appearance eliminates that. Scan once, look right everywhere.
+
 ## The 5-Layer Profile Stack
 
-Appearance captures data at five layers. Different apps need different combinations.
+Appearance captures data at five layers. Different apps need different depths.
 
 | Layer | What It Captures | Changes | Example Consumer |
 |-------|-----------------|---------|-----------------|
@@ -39,11 +47,14 @@ Appearance captures data at five layers. Different apps need different combinati
 ## What You Can Build
 
 <Columns cols={2}>
-  <Card title="Nail Salons" icon="hand-sparkles">
-    Read a user's aesthetic identity and color preferences to suggest nail designs that match their overall style.
+  <Card title="AI Agents" icon="robot">
+    Any agent that needs appearance context — shopping assistants, stylists, travel planners — can query the API instead of asking the user to describe themselves.
   </Card>
   <Card title="Clothing & Styling" icon="shirt">
     Know the user's face shape, coloring, and current hairstyle to recommend outfits that work as a complete look.
+  </Card>
+  <Card title="Nail Salons" icon="hand-sparkles">
+    Read a user's aesthetic identity and color preferences to suggest nail designs that match their overall style.
   </Card>
   <Card title="Photography & Dating" icon="camera">
     Help users identify which photos represent how they actually look right now, based on current appearance data.
@@ -54,9 +65,6 @@ Appearance captures data at five layers. Different apps need different combinati
   <Card title="Wedding Planning" icon="rings-wedding">
     Coordinate hair, makeup, and accessories across partners using their combined appearance profiles.
   </Card>
-  <Card title="AI Agents" icon="robot">
-    Any agent that needs appearance context can query the Appearance API via MCP, REST, or SDK.
-  </Card>
 </Columns>
 
 ## Agent-First by Design
@@ -66,7 +74,7 @@ Appearance is built for the agentic era. Every part of our platform is machine-r
 - **MCP Server** — Any MCP-compatible agent (Claude, Cursor, ChatGPT, VS Code) can query our docs and API directly
 - **llms.txt** — Our entire documentation in a single markdown file, ready for any LLM's context window
 - **OpenAPI 3.1** — Standard API contract that any agent framework can parse and call
-- **Structured Responses** — Every API response includes typed, enumerated fields — no free-text parsing needed
+- **Structured Responses** — Every API response uses typed, enumerated fields — no free-text parsing needed
 
 <Card title="Agent Integration Guide" icon="plug" href="/guides/agent-integration" horizontal>
   Learn how to connect any AI agent to Appearance data in minutes.

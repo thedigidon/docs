@@ -1,7 +1,13 @@
 ---
-title: "Agent Integration"
-description: "How any AI agent — Claude, GPT, Gemini, open-source, or custom — can discover and integrate with Appearance data."
+title: "For AI Agents"
+description: "How any AI agent — Claude, GPT, Gemini, open-source, or custom — can discover and use Appearance data."
 ---
+
+## Why Agents Need Appearance
+
+AI agents are the first consumers of the Appearance API. Any agent that personalizes recommendations, helps with shopping, plans events, or gives style advice needs to know what the user looks like. Today, agents ask users to describe themselves — or skip personalization entirely.
+
+With Appearance, an agent makes one API call and gets 50+ structured fields: hair texture, face shape, density, coloring, measurements. No questionnaires. No photo uploads. Immediate context.
 
 ## Discovery
 
@@ -69,43 +75,76 @@ Any agent framework that supports OpenAPI (LangChain, CrewAI, AutoGen, etc.) can
 
 ## Integration Patterns
 
-### Pattern 1: Tool Use
+### Pattern 1: Read Appearance Data
 
-The agent has Appearance as a tool it can call during conversations.
+The agent has Appearance as a tool and reads the user's profile to personalize its responses.
 
 ```
 User: "I want to get a new haircut. What would work for me?"
-Agent: [calls Appearance API — GET /v1/users/me/card]
-Agent: "Based on your profile, you have type 3B curly hair with thick density.
-        Let me find compatible styles..."
-Agent: [calls Appearance API — GET /v1/recommendations?zone=hair]
-Agent: "Here are 5 styles that work with your texture. The top match scores
-        82/90 — strong on texture (30/30) and face shape (15/15)."
+Agent: [calls GET /v1/users/me/profile with user's token]
+Agent: "Based on your profile, you have type 3B curly hair with thick density
+        and an oval face shape. Here are styles that complement your texture
+        and face shape..."
 ```
+
+This is the simplest pattern: read the profile, use the structured fields to inform any downstream task.
 
 ### Pattern 2: Context Enrichment
 
-The agent fetches the user's appearance data to personalize other tasks.
+The agent fetches appearance data to personalize tasks that aren't directly about appearance.
 
 ```
 Agent building a travel packing list:
-  → Fetches user's Appearance Card
+  → Fetches user's Appearance Profile
   → Knows user has curly hair, type 3B
   → Recommends curl-friendly travel products
   → Suggests styles that work in humid destinations
+
+Agent planning a wedding:
+  → Fetches both partners' profiles
+  → Knows face shapes, coloring, hair types
+  → Coordinates hair, makeup, and accessory suggestions
 ```
 
-### Pattern 3: Compatibility Check
+### Pattern 3: Appearance Creation
 
-The agent checks whether a specific offering works for a user.
+An agent helps a user build their Appearance from scratch — the onramp for users who don't have the Appearance app yet.
 
 ```
-Nail salon agent:
-  → User browsing nail designs
-  → Agent calls POST /v1/compatibility/check with user token + offering ID
-  → Gets back: { total: 78, tiers: { texture: 30, faceShape: 15, ... } }
-  → "This design complements your warm undertone and overall aesthetic."
+User: "I want personalized glasses recommendations but I've never used Appearance."
+Agent: [calls POST /v1/scans/initiate]
+Agent: "I can set that up. Open this link to do a quick 10-second face scan,
+        and I'll have your measurements and profile ready."
+User: [completes scan via the link]
+Agent: [receives webhook when profile is ready]
+Agent: [calls GET /v1/users/me/profile]
+Agent: "Done! Based on your face width and bridge measurements, here are
+        frames that will fit perfectly..."
 ```
+
+This pattern turns every agent into a distribution channel for Appearance. The agent initiates a scan, the user completes it, and the agent immediately gets structured data to work with.
+
+```bash
+# Initiate a scan session
+curl -X POST https://api.appearance.app/v1/scans/initiate \
+  -H "X-Appearance-API-Key: ak_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "redirectUrl": "https://yourapp.com/scan-complete",
+    "webhookUrl": "https://yourapp.com/webhooks/appearance"
+  }'
+```
+
+Response:
+```json
+{
+  "sessionId": "scan_k7Xm9pL2qR4v",
+  "scanUrl": "https://appearance.app/scan?session=scan_k7Xm9pL2qR4v",
+  "expiresAt": "2026-03-29T11:30:00Z"
+}
+```
+
+The user opens `scanUrl`, completes their face scan, and your `webhookUrl` receives a callback with the user's access token once the profile is built.
 
 ## API Authentication
 
@@ -124,23 +163,20 @@ All API responses use **structured, enumerated fields** — no free-text parsing
 
 ```json
 {
-  "card": {
+  "hair": {
     "textureFamily": 3,
     "density": "thick",
     "faceShape": "oval",
-    "holdRequired": "medium"
+    "lengths": { "top": "short", "sides": "short" }
   },
-  "compatibility": {
-    "total": 78,
-    "tiers": {
-      "nature": 0,
-      "texture": 30,
-      "length": 20,
-      "density": 7,
-      "coverage": 0,
-      "faceShape": 15,
-      "styleDim": 6
-    }
+  "structural": {
+    "faceWidth": 142.3,
+    "jawWidth": 126.1,
+    "skinTone": { "fitzpatrick": "Type V", "undertone": "warm" }
+  },
+  "glasses": {
+    "binocularPdMm": 63.5,
+    "frameSize": "medium"
   }
 }
 ```
