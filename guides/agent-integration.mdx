@@ -1,23 +1,15 @@
 ---
 title: "For AI Agents"
-description: "How any AI agent — Claude, GPT, Gemini, open-source, or custom — can discover and use Appearance data."
+description: "How any AI agent can discover and use Appearance data."
 ---
 
-## Why Agents Need Appearance
-
-AI agents are the first consumers of the Appearance API. Any agent that personalizes recommendations, helps with shopping, plans events, or gives style advice needs to know what the user looks like. Today, agents ask users to describe themselves — or skip personalization entirely.
-
-With Appearance, an agent makes one API call and gets 50+ structured fields: hair texture, face shape, density, coloring, measurements. No questionnaires. No photo uploads. Immediate context.
+Any agent that needs to know what a user looks like can integrate with Appearance through standard protocols.
 
 ## Discovery
 
-Appearance is designed to be discovered and consumed by AI agents through standard protocols. No vendor lock-in — any agent that speaks these protocols can integrate.
-
 ### MCP Server
 
-The Appearance docs include an auto-generated [Model Context Protocol](https://modelcontextprotocol.io) server. Any MCP-compatible client can search our documentation directly.
-
-**Server URL:** `https://docs.appearance.app/mcp`
+Appearance exposes a [Model Context Protocol](https://modelcontextprotocol.io) server. Any MCP-compatible client can query documentation and API definitions directly.
 
 <Tabs>
   <Tab title="Claude Code">
@@ -26,7 +18,6 @@ The Appearance docs include an auto-generated [Model Context Protocol](https://m
     ```
   </Tab>
   <Tab title="Cursor">
-    Add to your `mcp.json`:
     ```json
     {
       "mcpServers": {
@@ -38,7 +29,6 @@ The Appearance docs include an auto-generated [Model Context Protocol](https://m
     ```
   </Tab>
   <Tab title="VS Code">
-    Create `.vscode/mcp.json`:
     ```json
     {
       "servers": {
@@ -54,88 +44,55 @@ The Appearance docs include an auto-generated [Model Context Protocol](https://m
 
 ### llms.txt
 
-Our entire documentation is available as a single markdown file at:
+Full documentation as a single markdown file:
 
 ```
 https://docs.appearance.app/llms.txt
 https://docs.appearance.app/llms-full.txt
 ```
 
-Any LLM can ingest `llms-full.txt` in one request to understand the complete Appearance API.
+### OpenAPI
 
-### OpenAPI Spec
-
-The machine-readable API contract is available at:
+Machine-readable API contract for automatic tool generation:
 
 ```
 https://docs.appearance.app/api-reference/openapi.json
 ```
 
-Any agent framework that supports OpenAPI (LangChain, CrewAI, AutoGen, etc.) can parse this spec and generate tool definitions automatically.
+## How agents use Appearance
 
-## Integration Patterns
+### Reading appearance data
 
-### Pattern 1: Read Appearance Data
-
-The agent has Appearance as a tool and reads the user's profile to personalize its responses.
+The agent calls the API with the user's token and receives structured data it can use directly.
 
 ```
-User: "I want to get a new haircut. What would work for me?"
-Agent: [calls GET /v1/users/me/profile with user's token]
-Agent: "Based on your profile, you have type 3B curly hair with thick density
-        and an oval face shape. Here are styles that complement your texture
-        and face shape..."
+User: "What kind of glasses would suit me?"
+Agent: [calls GET /v1/users/me/appearance]
+Agent: "You have an oval face shape with a face width of 142mm.
+        Medium frames with a bridge width around 18mm would fit well."
 ```
 
-This is the simplest pattern: read the profile, use the structured fields to inform any downstream task.
+### Enriching other tasks
 
-### Pattern 2: Context Enrichment
-
-The agent fetches appearance data to personalize tasks that aren't directly about appearance.
+The agent reads appearance data to personalize work that isn't directly about appearance.
 
 ```
 Agent building a travel packing list:
-  → Fetches user's Appearance Profile
+  → Reads user's appearance data
   → Knows user has curly hair, type 3B
-  → Recommends curl-friendly travel products
-  → Suggests styles that work in humid destinations
-
-Agent planning a wedding:
-  → Fetches both partners' profiles
-  → Knows face shapes, coloring, hair types
-  → Coordinates hair, makeup, and accessory suggestions
+  → Includes curl-friendly travel products
 ```
 
-### Pattern 3: Appearance Creation
+### Creating an appearance
 
-An agent helps a user build their Appearance from scratch — the onramp for users who don't have the Appearance app yet.
-
-```
-User: "I want personalized glasses recommendations but I've never used Appearance."
-Agent: [calls POST /v1/scans/initiate]
-Agent: "I can set that up. Open this link to do a quick 10-second face scan,
-        and I'll have your measurements and profile ready."
-User: [completes scan via the link]
-Agent: [receives webhook when profile is ready]
-Agent: [calls GET /v1/users/me/profile]
-Agent: "Done! Based on your face width and bridge measurements, here are
-        frames that will fit perfectly..."
-```
-
-This pattern turns every agent into a distribution channel for Appearance. The agent initiates a scan, the user completes it, and the agent immediately gets structured data to work with.
+If the user doesn't have an Appearance profile, the agent can initiate one.
 
 ```bash
-# Initiate a scan session
 curl -X POST https://api.appearance.app/v1/scans/initiate \
   -H "X-Appearance-API-Key: ak_your_key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "redirectUrl": "https://yourapp.com/scan-complete",
-    "webhookUrl": "https://yourapp.com/webhooks/appearance"
-  }'
+  -d '{ "redirectUrl": "https://yourapp.com/callback" }'
 ```
 
-Response:
 ```json
 {
   "sessionId": "scan_k7Xm9pL2qR4v",
@@ -144,52 +101,20 @@ Response:
 }
 ```
 
-The user opens `scanUrl`, completes their face scan, and your `webhookUrl` receives a callback with the user's access token once the profile is built.
+The user opens `scanUrl`, completes a ten-second face scan, and your app receives a callback when their profile is ready.
 
-## API Authentication
+## Authentication
 
-All API calls require two credentials:
+| Header | Purpose |
+|--------|---------|
+| `X-Appearance-API-Key: ak_...` | Identifies your app |
+| `Authorization: Bearer at_...` | Identifies the consenting user |
 
-| Credential | Header | Purpose |
-|-----------|--------|---------|
-| **API Key** | `X-Appearance-API-Key: ak_...` | Identifies your app |
-| **User Token** | `Authorization: Bearer at_...` | Identifies the consenting user |
+Both headers are required for all user-scoped requests.
 
-The API Key identifies your application. The Bearer token comes from the user completing the "Sign in with Appearance" OAuth flow.
-
-## Response Format
-
-All API responses use **structured, enumerated fields** — no free-text parsing needed. An agent can reliably extract and compare values.
-
-```json
-{
-  "hair": {
-    "textureFamily": 3,
-    "density": "thick",
-    "faceShape": "oval",
-    "lengths": { "top": "short", "sides": "short" }
-  },
-  "structural": {
-    "faceWidth": 142.3,
-    "jawWidth": 126.1,
-    "skinTone": { "fitzpatrick": "Type V", "undertone": "warm" }
-  },
-  "glasses": {
-    "binocularPdMm": 63.5,
-    "frameSize": "medium"
-  }
-}
-```
-
-Every field is typed and constrained to a known set of values. Agents can use these values directly in logic without natural language interpretation.
-
-## Rate Limits
+## Rate limits
 
 | Scope | Limit |
 |-------|-------|
-| Per API key | 60 requests/minute (free tier) |
+| Per API key | 60 requests/minute |
 | Per user token | 120 requests/minute |
-
-Rate limit headers are included in every response:
-- `X-RateLimit-Remaining`
-- `X-RateLimit-Reset`

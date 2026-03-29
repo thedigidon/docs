@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Appearance API",
-    "description": "The canonical appearance profile API. Access structured appearance data for any consenting user — 50+ fields across hair, face, and glasses from a single face scan.",
+    "description": "Access structured appearance data for any consenting user.",
     "version": "0.1.0",
     "contact": {
       "name": "Appearance Developer Support",
@@ -22,124 +22,55 @@
     }
   ],
   "paths": {
-    "/users/me/profile": {
+    "/users/me/appearance": {
       "get": {
-        "summary": "Get user's Appearance Profile",
-        "description": "Returns the authenticated user's full Appearance Profile — 50+ structured fields across hair, structural measurements, and glasses zones. This is the primary endpoint for accessing appearance data.",
-        "operationId": "getUserProfile",
+        "summary": "Get user's appearance",
+        "description": "Returns the authenticated user's current appearance — scan grid image, structured face and hair data, skin tone, and facial measurements.",
+        "operationId": "getUserAppearance",
         "tags": ["Users"],
         "responses": {
           "200": {
-            "description": "User's Appearance Profile",
+            "description": "The user's appearance data",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AppearanceProfile"
+                  "$ref": "#/components/schemas/Appearance"
                 },
                 "example": {
+                  "scanGrid": "https://appearance.app/scans/usr_k7Xm/grid.jpg",
+                  "faceShape": "oval",
                   "hair": {
                     "textureFamily": 3,
-                    "textureType": "3B",
                     "textureLabel": "Curly",
                     "density": "thick",
-                    "strandThickness": "medium",
-                    "lengths": { "top": "short", "sides": "short", "back": "short", "fringe": null },
-                    "naturalColor": "black",
-                    "isColorTreated": false,
-                    "faceShape": "oval",
-                    "coverage": "full",
-                    "currentCutFamily": "fade",
-                    "facialHair": { "hasBeard": true, "beardType": "short stubble" }
+                    "lengths": { "top": "short", "sides": "short" }
                   },
-                  "structural": {
-                    "faceShape": "oval",
-                    "faceWidth": 142.3,
-                    "jawWidth": 126.1,
-                    "skinTone": { "fitzpatrick": "Type V", "undertone": "warm", "description": "Brown skin with warm undertone" }
+                  "skinTone": {
+                    "fitzpatrick": "Type V",
+                    "undertone": "warm"
                   },
-                  "glasses": {
-                    "binocularPdMm": 63.5,
+                  "measurements": {
                     "faceWidthMm": 142.3,
-                    "frameSize": "medium",
-                    "wearsPrescription": false
+                    "jawWidthMm": 126.1,
+                    "pdMm": 63.5
                   },
-                  "lastAnalyzedAt": "2026-03-29T10:30:00Z",
-                  "schemaVersion": 2
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "404": {
-            "description": "User has no appearance profile (no scan completed)"
-          }
-        }
-      }
-    },
-    "/users/me/card": {
-      "get": {
-        "summary": "Get user's Appearance Card",
-        "description": "Returns the authenticated user's Appearance Card — a compact, ~25-field extract with enum-only values for quick reads and lightweight integrations.",
-        "operationId": "getUserCard",
-        "tags": ["Users"],
-        "responses": {
-          "200": {
-            "description": "User's Appearance Card",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AppearanceCard"
-                },
-                "example": {
-                  "cardType": "user",
-                  "zone": "hair",
                   "audience": "masculine",
-                  "textureFamily": 3,
-                  "textureType": "3B",
-                  "lengths": { "top": "short", "sides": "short" },
-                  "density": "thick",
-                  "cutFamily": "fade",
-                  "styleNature": "natural",
-                  "coverage": "full",
-                  "faceShape": "oval",
-                  "computedAt": "2026-03-29T10:30:00Z",
-                  "cardVersion": 1
+                  "analyzedAt": "2026-03-29T10:30:00Z"
                 }
               }
             }
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "404": {
-            "description": "User has no appearance card (no scan completed)"
+            "description": "User has no appearance data (no scan completed)"
           }
-        }
-      }
-    },
-    "/users/me/identity": {
-      "get": {
-        "summary": "Get user's Visual Identity",
-        "description": "Returns the user's Visual Identity Snapshot — a compact representation with scan URL, face shape, and key attributes. Useful for quick identification and display.",
-        "operationId": "getUserIdentity",
-        "tags": ["Users"],
-        "responses": {
-          "200": {
-            "description": "Visual Identity Snapshot",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VisualIdentitySnapshot"
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       }
     },
     "/scans/initiate": {
       "post": {
         "summary": "Initiate a scan session",
-        "description": "Creates a new scan session and returns a URL where the user can complete their face scan. Use this to onboard users who don't have an Appearance profile yet. When the scan is complete, the optional webhook URL receives a callback with the user's access token.",
+        "description": "Creates a scan session for a user who doesn't have an Appearance profile yet. Returns a URL where the user can complete a face scan. Your app receives a callback when the profile is ready.",
         "operationId": "initiateScan",
         "tags": ["Scans"],
         "requestBody": {
@@ -152,7 +83,7 @@
                   "redirectUrl": {
                     "type": "string",
                     "format": "uri",
-                    "description": "URL to redirect the user to after scan completion"
+                    "description": "Where to redirect the user after scan completion"
                   },
                   "webhookUrl": {
                     "type": "string",
@@ -196,152 +127,63 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "User's access token from Sign in with Appearance OAuth flow"
+        "description": "User's access token from Sign in with Appearance"
       }
     },
     "responses": {
       "Unauthorized": {
-        "description": "Missing or invalid API key / user token"
+        "description": "Missing or invalid API key or user token"
       }
     },
     "schemas": {
-      "AppearanceProfile": {
+      "Appearance": {
         "type": "object",
-        "description": "Complete appearance profile with 50+ fields across hair, structural, and glasses zones. Built from AI-analyzed multi-angle face scans combined with ARKit measurements.",
+        "description": "A user's current appearance data from their most recent scan.",
         "properties": {
+          "scanGrid": { "type": "string", "format": "uri", "description": "Signed URL to the 2x2 scan grid image" },
+          "faceShape": { "type": "string", "enum": ["oval", "round", "square", "diamond", "heart", "oblong"] },
           "hair": {
-            "type": ["object", "null"],
-            "description": "Hair zone profile — texture, lengths, color, condition, facial hair, growth patterns, and style capabilities",
+            "type": "object",
             "properties": {
-              "textureFamily": { "description": "Andre Walker classification: 1=Straight, 2=Wavy, 3=Curly, 4=Coily, or 'bald'" },
-              "textureType": { "type": ["string", "null"], "description": "Subtype: '1A'-'4C'" },
-              "textureLabel": { "type": "string", "description": "Human-readable: 'Straight', 'Wavy', 'Curly', 'Coily'" },
+              "textureFamily": { "type": "integer", "description": "Andre Walker scale: 1 (straight), 2 (wavy), 3 (curly), 4 (coily)" },
+              "textureLabel": { "type": "string", "description": "Human-readable texture name" },
               "density": { "type": "string", "enum": ["thin", "medium", "thick"] },
-              "strandThickness": { "type": ["string", "null"], "enum": ["fine", "medium", "coarse", null] },
               "lengths": {
                 "type": "object",
                 "properties": {
                   "top": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] },
-                  "sides": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] },
-                  "back": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] },
-                  "fringe": { "type": ["string", "null"], "enum": ["bald", "stubble", "short", "medium", "long", null] }
+                  "sides": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] }
                 }
-              },
-              "naturalColor": { "type": "string" },
-              "currentColor": { "type": ["string", "null"] },
-              "isColorTreated": { "type": "boolean" },
-              "undertone": { "type": ["string", "null"], "enum": ["warm", "cool", "neutral", null] },
-              "grayPercentage": { "type": ["number", "null"] },
-              "faceShape": { "type": "string", "enum": ["oval", "round", "square", "diamond", "heart", "oblong"] },
-              "coverage": { "type": "string" },
-              "hairlineShape": { "type": "string" },
-              "templeRecession": { "type": "string" },
-              "crownThinning": { "type": "string" },
-              "facialHair": {
-                "type": ["object", "null"],
-                "properties": {
-                  "hasBeard": { "type": "boolean" },
-                  "beardType": { "type": "string" },
-                  "beardColor": { "type": ["string", "null"] },
-                  "connectsToSideburns": { "type": "boolean" }
-                }
-              },
-              "currentCutFamily": { "type": ["string", "null"] },
-              "currentStyleDescription": { "type": ["string", "null"] },
-              "canGoShorter": { "type": "boolean" },
-              "canGoLonger": { "type": "boolean" },
-              "canFade": { "type": "boolean" },
-              "canLighten": { "type": "boolean" },
-              "damageLevel": { "type": ["string", "null"], "enum": ["virgin", "mild", "moderate", "severe", null] },
-              "porosity": { "type": ["string", "null"], "enum": ["low", "normal", "high", null], "description": "User-editable" },
-              "elasticity": { "type": ["string", "null"], "enum": ["low", "normal", "high", null], "description": "User-editable" },
-              "heatStylingFrequency": { "type": ["string", "null"], "enum": ["never", "occasional", "regular", "daily", null], "description": "User-editable" }
+              }
             }
           },
-          "structural": {
-            "type": ["object", "null"],
-            "description": "Cross-zone structural measurements — face shape, dimensions, skin tone, and detailed facial geometry",
+          "skinTone": {
+            "type": "object",
             "properties": {
-              "faceShape": { "type": "string", "enum": ["oval", "round", "square", "diamond", "heart", "oblong"] },
-              "faceWidth": { "type": ["number", "null"], "description": "Face width in mm (ARKit)" },
-              "faceHeight": { "type": ["number", "null"], "description": "Face height in mm" },
-              "jawWidth": { "type": ["number", "null"], "description": "Jaw width in mm" },
-              "foreheadHeight": { "type": ["number", "null"], "description": "Forehead height in mm" },
-              "widthToHeightRatio": { "type": ["number", "null"] },
-              "skinTone": {
-                "type": ["object", "null"],
-                "properties": {
-                  "fitzpatrick": { "type": "string", "description": "Fitzpatrick scale classification" },
-                  "undertone": { "type": "string", "description": "Warm, cool, or neutral" },
-                  "description": { "type": "string", "description": "Human-readable description" }
-                }
-              },
-              "interOcularDistance": { "type": ["number", "null"], "description": "Distance between pupils in mm" },
-              "cheekboneWidth": { "type": ["number", "null"], "description": "Cheekbone width in mm" },
-              "foreheadWidth": { "type": ["number", "null"], "description": "Forehead width in mm" }
+              "fitzpatrick": { "type": "string", "description": "Fitzpatrick scale classification" },
+              "undertone": { "type": "string", "enum": ["warm", "cool", "neutral"] }
             }
           },
-          "glasses": {
-            "type": ["object", "null"],
-            "description": "Glasses zone — pupillary distance, frame sizing, and fit measurements",
+          "measurements": {
+            "type": "object",
+            "description": "Physical measurements from ARKit facial geometry, in millimeters",
             "properties": {
-              "binocularPdMm": { "type": ["number", "null"], "description": "Pupillary distance in mm" },
-              "faceWidthMm": { "type": ["number", "null"], "description": "Face width for frame sizing" },
-              "bridgeWidthMm": { "type": ["number", "null"], "description": "Nose bridge width in mm" },
-              "frameSize": { "type": ["string", "null"], "enum": ["small", "medium", "large", "extra-large", null] },
-              "recommendedFrameWidthMinMm": { "type": ["number", "null"] },
-              "recommendedFrameWidthMaxMm": { "type": ["number", "null"] },
-              "wearsPrescription": { "type": "boolean" }
+              "faceWidthMm": { "type": "number" },
+              "jawWidthMm": { "type": "number" },
+              "pdMm": { "type": "number", "description": "Pupillary distance" }
             }
           },
-          "lastAnalyzedAt": { "type": "string", "format": "date-time" },
-          "schemaVersion": { "type": "integer" }
-        }
-      },
-      "AppearanceCard": {
-        "type": "object",
-        "description": "Compact, ~25-field extract of a user's appearance with enum-only values. The lightweight format for quick reads.",
-        "properties": {
-          "cardType": { "type": "string", "const": "user" },
-          "zone": { "type": "string", "enum": ["hair", "glasses"] },
-          "audience": { "type": ["string", "null"], "enum": ["masculine", "feminine", "androgynous", null] },
-          "textureFamily": { "description": "1=Straight, 2=Wavy, 3=Curly, 4=Coily, or 'bald'" },
-          "textureType": { "type": ["string", "null"], "description": "Andre Walker subtype: '3C', '2A', '4B'" },
-          "lengths": { "type": ["object", "null"], "properties": { "top": { "type": "string" }, "sides": { "type": "string" } } },
-          "density": { "type": ["string", "null"], "enum": ["thin", "medium", "thick", null] },
-          "cutFamily": { "type": ["string", "null"], "enum": ["fade", "taper", "buzz", "scissor", "longer_scissor", "other", null] },
-          "styleNature": { "type": ["string", "null"], "enum": ["natural", "protective", "heat-styled", null] },
-          "coverage": { "type": ["string", "null"], "enum": ["full", "thinning", "sparse", "patchy", null] },
-          "faceShape": { "type": ["string", "null"], "enum": ["oval", "round", "square", "diamond", "heart", "oblong", null] },
-          "colorTechnique": { "type": ["string", "null"] },
-          "layeringMethod": { "type": ["string", "null"] },
-          "stylingMethod": { "type": ["string", "null"] },
-          "volumeLevel": { "type": ["string", "null"], "enum": ["flat", "low", "medium", "high", "voluminous", null] },
-          "frameSizeCategory": { "type": ["string", "null"], "enum": ["small", "medium", "large", "extra-large", null] },
-          "bridgeCategory": { "type": ["string", "null"], "enum": ["narrow", "medium", "wide", null] },
-          "frameShape": { "type": ["string", "null"] },
-          "computedAt": { "type": "string", "format": "date-time" },
-          "cardVersion": { "type": "integer", "const": 1 }
-        }
-      },
-      "VisualIdentitySnapshot": {
-        "type": "object",
-        "description": "Compact visual identity for quick identification and display",
-        "properties": {
-          "scanUrl": { "type": "string", "format": "uri", "description": "Signed URL to the user's scan grid image" },
-          "scanCreatedAt": { "type": "string", "format": "date-time" },
-          "faceShape": { "type": "string" },
-          "hairProfile": { "type": ["object", "null"], "description": "Compact hair profile snapshot" },
-          "schemaVersion": { "type": "integer" }
+          "audience": { "type": "string", "enum": ["masculine", "feminine", "androgynous"] },
+          "analyzedAt": { "type": "string", "format": "date-time" }
         }
       },
       "ScanSession": {
         "type": "object",
-        "description": "A scan session that allows a user to create their Appearance profile. The scanUrl opens the Appearance scan flow; the optional webhook fires when the profile is ready.",
+        "description": "A session for creating a new Appearance profile via face scan.",
         "properties": {
-          "sessionId": { "type": "string", "description": "Unique session identifier (scan_...)" },
-          "scanUrl": { "type": "string", "format": "uri", "description": "URL to open for the user to complete their face scan" },
-          "expiresAt": { "type": "string", "format": "date-time", "description": "When this scan session expires" }
+          "sessionId": { "type": "string", "description": "Unique session identifier" },
+          "scanUrl": { "type": "string", "format": "uri", "description": "URL for the user to complete their scan" },
+          "expiresAt": { "type": "string", "format": "date-time" }
         }
       }
     }

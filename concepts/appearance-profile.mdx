@@ -1,487 +1,92 @@
 ---
-title: "Appearance Profile"
-description: "The full picture of a user's appearance — 50+ structured fields across hair, face, and glasses, built from a single AI-analyzed face scan."
+title: "Appearance Data"
+description: "What you receive when a user shares their appearance with your app."
 ---
 
-## What is an Appearance Profile?
+When a user connects through Sign in with Appearance, you receive structured data describing what they look like. This data comes from a multi-angle face scan analyzed by AI vision and ARKit facial geometry.
 
-An Appearance Profile is the **complete, consolidated record** of everything Appearance knows about a user's physical appearance. One face scan — six angles, ten seconds — produces **50+ structured fields** spanning hair texture, facial geometry, skin tone, and eyewear measurements.
+## Scan grid
 
-The profile is organized by **zone**: hair, structural (cross-zone facial measurements), and glasses. Each zone captures a different dimension of appearance. The hair zone alone contains over 40 fields across texture, color, growth patterns, condition, capabilities, and current style.
-
-Profiles are **read-only** (auto-generated from scans) with a small set of **user-editable fields** for attributes that AI cannot detect from photos.
-
-```json Example: accessing a profile
-GET /users/me/profile
-Scope: appearance:profile
-```
-
----
-
-## Why This Matters
-
-These are fields no app could collect on its own in under 30 seconds.
-
-Without Appearance, getting this data requires questionnaires ("What's your hair type?"), photo uploads ("Show us your hairline"), and professional assessment ("Your porosity is low"). Users get it wrong, skip questions, or never finish.
-
-A face scan takes **10 seconds**. The profile eliminates questionnaires, photo uploads, and guesswork for every downstream application — styling recommendations, product matching, virtual try-on, barber briefs, and eyewear fitting all read from the same structured source of truth.
-
-<CardGroup cols={3}>
-  <Card title="10 seconds" icon="clock">
-    Time for a complete face scan
-  </Card>
-  <Card title="50+ fields" icon="database">
-    Structured, typed, ready to query
-  </Card>
-  <Card title="3 zones" icon="layer-group">
-    Hair, structural, and glasses
-  </Card>
-</CardGroup>
-
----
-
-## How Profiles Are Built
-
-<Steps>
-  <Step title="User performs a scan">
-    A 6-angle head capture using the device camera and ARKit face tracking. The user turns their head through front, left, right, up, down, and three-quarter angles while the app captures photos and facial landmark data.
-  </Step>
-  <Step title="AI analyzes the scan">
-    Gemini Flash vision model receives the multi-angle photos and extracts structured hair, skin, and facial attributes. This produces texture classification, color analysis, hairline mapping, growth patterns, condition assessment, and facial hair detection.
-  </Step>
-  <Step title="ARKit provides measurements">
-    Facial landmark geometry from ARKit delivers millimeter-precision measurements: face width, jaw width, forehead height, inter-ocular distance, cheekbone width, and more. These are physical measurements, not AI estimates.
-  </Step>
-  <Step title="Server consolidates">
-    A Cloud Function merges AI analysis + ARKit data into a single `AppearanceProfile` document. Derived fields (capabilities like `canFade`, `canLineup`) are computed from the raw data. The profile is written to Firestore and immediately available via API.
-  </Step>
-</Steps>
-
----
-
-## Hair Zone
-
-The richest zone, with **40+ fields** across 11 categories. This is where the depth of a single scan becomes clear — texture classification, color science, growth pattern mapping, and style capability analysis, all from photos.
-
-### Texture & Structure
-
-The foundation of hair compatibility. Uses the Andre Walker classification system (types 1-4) with subtypes.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `textureFamily` | `1 \| 2 \| 3 \| 4 \| 'bald'` | Andre Walker classification. 1 = Straight, 2 = Wavy, 3 = Curly, 4 = Coily. |
-| `textureType` | `string` | Subtype within family: `'1A'`, `'2C'`, `'3B'`, `'4C'`, etc. |
-| `textureLabel` | `string` | Human-readable label: `'Straight'`, `'Wavy'`, `'Curly'`, `'Coily'` |
-| `density` | `'thin' \| 'medium' \| 'thick'` | How many hairs per square inch. Determines volume potential. |
-| `strandThickness` | `'fine' \| 'medium' \| 'coarse' \| null` | Individual strand diameter. Fine hair lays flat; coarse holds shape. |
-
-### Current Lengths
-
-Lengths are bucketed, not measured in inches — buckets are what matter for style compatibility.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lengths.top` | `LengthBucket` | Top of head. One of: `bald`, `stubble`, `short`, `medium`, `long`. |
-| `lengths.sides` | `LengthBucket` | Side length. Determines fade/taper feasibility. |
-| `lengths.back` | `LengthBucket` | Back length. Relevant for neckline and taper styles. |
-| `lengths.fringe` | `LengthBucket \| null` | Fringe/bangs length, if present. `null` if no fringe. |
-
-### Color
-
-Full color analysis including natural vs. treated state and gray coverage.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `naturalColor` | `string` | Natural hair color (e.g., `'Dark Brown'`, `'Black'`, `'Auburn'`). |
-| `naturalColorLevel` | `number \| null` | Color level on 1-10 scale. 1 = blackest black, 10 = lightest blonde. |
-| `currentColor` | `string \| null` | Current color if different from natural. `null` if virgin hair. |
-| `isColorTreated` | `boolean` | Whether hair has been dyed, bleached, or color-treated. |
-| `undertone` | `'warm' \| 'cool' \| 'neutral' \| null` | Color undertone. Warm = gold/copper, Cool = ash/silver. |
-| `grayPercentage` | `number \| null` | Estimated percentage of gray/white hair. `0`-`100`. |
-
-### Hairline & Coverage
-
-Critical for fade feasibility, lineup recommendations, and style matching with thinning patterns.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `hairlineShape` | `string` | Hairline contour (e.g., `'straight'`, `'M-shaped'`, `'widow's peak'`). |
-| `templeRecession` | `string` | Temple area recession level (e.g., `'none'`, `'slight'`, `'moderate'`). |
-| `hairlineRecession` | `string` | Overall hairline recession (e.g., `'none'`, `'slight'`, `'moderate'`, `'significant'`). |
-| `crownThinning` | `string` | Crown area thinning (e.g., `'none'`, `'early'`, `'moderate'`, `'advanced'`). |
-| `coverage` | `string` | Overall hair coverage level (e.g., `'full'`, `'thinning'`, `'sparse'`). |
-| `hasFringe` | `boolean` | Whether the user currently has bangs/fringe. |
-
-### Growth Patterns
-
-Where hair grows, how it falls, and where it parts naturally. Essential for predicting how a style will actually sit.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `growthPattern.dominantDirection` | `string \| null` | Primary growth direction (e.g., `'forward'`, `'backward'`, `'left'`). |
-| `growthPattern.cowlickLocations` | `string[] \| null` | Where cowlicks are located (e.g., `['crown']`, `['front-right', 'crown']`). |
-| `growthPattern.naturalPartSide` | `string \| null` | Natural part side: `'left'`, `'right'`, `'center'`, or `null`. |
-| `growthPattern.crownWhorl` | `'single' \| 'double' \| null` | Crown whorl pattern. Double whorls make certain styles harder to maintain. |
-
-### Head & Face Context
-
-Facial structure that influences which hairstyles are flattering. These fields exist in both the hair zone and structural zone — the hair zone copy is for convenience when doing hair-specific matching.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `faceShape` | `string` | Face shape (e.g., `'oval'`, `'round'`, `'square'`, `'diamond'`, `'heart'`, `'oblong'`). |
-| `headShapeProfile` | `string \| null` | Side-profile head shape (e.g., `'round'`, `'flat-back'`, `'elongated'`). |
-| `earProminence` | `string \| null` | How much ears protrude (e.g., `'flat'`, `'average'`, `'prominent'`). Affects styles that expose ears. |
-| `neckLength` | `string \| null` | Neck length relative to proportion (e.g., `'short'`, `'average'`, `'long'`). |
-
-### Condition & Health
-
-Current hair health state. Damage level and grooming are AI-detected; porosity and elasticity require user input because they can't be assessed from photos.
-
-| Field | Type | Source | Description |
-|-------|------|--------|-------------|
-| `grooming` | `string` | AI | Current grooming state (e.g., `'well-groomed'`, `'growing out'`, `'unkempt'`). |
-| `estimatedWeeksSinceCut` | `number \| null` | AI | How long since the last haircut. Approximate. |
-| `healthIndicators` | `string \| null` | AI | Visible health signals (e.g., `'healthy sheen'`, `'dry ends'`, `'breakage visible'`). |
-| `damageLevel` | `'virgin' \| 'mild' \| 'moderate' \| 'severe' \| null` | AI | Overall damage assessment. Virgin = untreated, no damage. |
-| `porosity` | `'low' \| 'normal' \| 'high' \| null` | **User** | How well hair absorbs and retains moisture. Affects product recommendations. |
-| `elasticity` | `'low' \| 'normal' \| 'high' \| null` | **User** | How well hair stretches and returns to shape. Indicates protein/moisture balance. |
-
-### Current Style
-
-What the user currently has. Used for "transition from" recommendations and cut family matching.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `currentStyleDescription` | `string \| null` | Free-text description of current style (e.g., `'Short textured crop with mid fade'`). |
-| `currentCutFamily` | `string \| null` | Cut family classification (e.g., `'fade'`, `'taper'`, `'scissor'`, `'buzz'`). |
-| `canonicalStyleTypeId` | `string \| null` | Fixed taxonomy ID (e.g., `'textured-crop'`, `'low-fade'`, `'french-crop'`). |
-| `partingStyle` | `string \| null` | Current parting (e.g., `'left'`, `'right'`, `'center'`, `'none'`). |
-| `volumeDistribution` | `string \| null` | Where volume concentrates (e.g., `'top-heavy'`, `'even'`, `'flat'`). |
-
-### Facial Hair
-
-Full beard/mustache analysis. Relevant for styles where facial hair is part of the overall look.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `facialHair.hasBeard` | `boolean` | Whether the user has any facial hair. |
-| `facialHair.beardType` | `string` | Beard style (e.g., `'stubble'`, `'full beard'`, `'goatee'`, `'clean-shaven'`). |
-| `facialHair.beardColor` | `string \| null` | Beard color, which may differ from head hair. |
-| `facialHair.connectsToSideburns` | `boolean` | Whether beard connects to sideburns. Affects fade line decisions. |
-| `facialHair.coverage` | `string \| null` | Facial hair coverage (e.g., `'full'`, `'patchy'`, `'sparse'`). |
-
-### Capabilities (Derived)
-
-Boolean flags computed from the raw profile data. These answer the question: "Given this user's current hair, what can they do?"
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `canGoShorter` | `boolean` | Has enough length to go shorter and still have a style. |
-| `canGoLonger` | `boolean` | Current length supports growing out further. |
-| `canFade` | `boolean` | Side/back length and texture support a fade. |
-| `canLineup` | `boolean` | Hairline and texture support a clean lineup/edge-up. |
-| `canLighten` | `boolean` | Current color and damage level allow lightening/bleaching safely. |
-
-### Treatment History (User-Editable)
-
-Chemical and heat history that AI cannot detect from photos. Users set these manually.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `chemicalHistory` | `string[] \| null` | Past chemical treatments (e.g., `['relaxer', 'keratin treatment']`). |
-| `colorHistory` | `string \| null` | Color treatment history (e.g., `'Bleached 6 months ago, box dyed twice'`). |
-| `heatStylingFrequency` | `'never' \| 'occasional' \| 'regular' \| 'daily' \| null` | How often heat tools are used. Affects damage prediction and product recommendations. |
-
----
-
-## Structural Zone
-
-Cross-zone physical measurements that apply to **all** appearance zones. These come from two sources: ARKit facial landmark geometry (millimeter precision) and AI anatomical analysis (proportion ratios and qualitative assessments).
-
-### Core Facial Measurements
-
-| Field | Type | Source | Description |
-|-------|------|--------|-------------|
-| `faceShape` | `string` | AI | Face shape classification (e.g., `'oval'`, `'round'`, `'square'`). |
-| `faceWidth` | `number \| null` | ARKit | Face width in millimeters. |
-| `faceHeight` | `number \| null` | ARKit | Face height in millimeters. |
-| `jawWidth` | `number \| null` | ARKit | Jaw width in millimeters. |
-| `foreheadHeight` | `number \| null` | ARKit | Forehead height in millimeters. |
-| `widthToHeightRatio` | `number \| null` | ARKit | Face width divided by face height. |
-| `headShapeProfile` | `string \| null` | AI | Side-profile head shape. |
-| `foreheadProportion` | `string \| null` | AI | Forehead size relative to face (e.g., `'narrow'`, `'average'`, `'broad'`). |
-| `earProminence` | `string \| null` | AI | Ear protrusion level. |
-| `neckLength` | `string \| null` | AI | Neck length classification. |
-
-### Skin Tone
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `skinTone.fitzpatrick` | `string` | Fitzpatrick scale classification (e.g., `'Type III'`, `'Type V'`). |
-| `skinTone.undertone` | `string` | Skin undertone: `'warm'`, `'cool'`, or `'neutral'`. |
-| `skinTone.description` | `string` | Human-readable description (e.g., `'Medium with warm olive undertone'`). |
-
-### ARKit Geometry (Schema v2+)
-
-Millimeter-precision measurements from ARKit facial landmarks. Available on devices with TrueDepth camera (iPhone X and later). These are **physical measurements**, not AI estimates.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `interOcularDistance` | `number \| null` | Distance between pupils in mm. Basis for PD measurement. |
-| `interOcularRatio` | `number \| null` | Inter-ocular distance as ratio of face width. |
-| `cheekboneWidth` | `number \| null` | Distance between cheekbone landmarks in mm. |
-| `jawWidthLandmark` | `number \| null` | Jaw width from ARKit landmarks in mm (vs. AI estimate in `jawWidth`). |
-| `foreheadWidth` | `number \| null` | Forehead width in mm. |
-| `foreheadToChinRatio` | `number \| null` | Forehead-to-chin proportion. Key for face shape validation. |
-| `chinToNoseRatio` | `number \| null` | Chin-to-nose proportion. |
-| `noseLength` | `number \| null` | Nose length in mm. Used for glasses bridge fitting. |
-| `nasalProjection` | `number \| null` | How far the nose projects from the face plane in mm. Critical for bridge fit. |
-| `chinProjection` | `number \| null` | Chin projection from face plane in mm. |
-| `jawDepthLeft` | `number \| null` | Left jaw depth in mm. Asymmetry detection. |
-| `jawDepthRight` | `number \| null` | Right jaw depth in mm. Compared with left for symmetry analysis. |
-
-### AI Anatomical Analysis
-
-Proportion ratios and qualitative assessments from Gemini Flash vision analysis. These complement ARKit measurements with observations that require understanding facial aesthetics.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `anatomical.lengthToWidthRatio` | `number \| null` | Face length-to-width ratio. Below 1.2 = wider face, above 1.5 = longer face. |
-| `anatomical.thirdsBalance` | `string \| null` | Balance of facial thirds (forehead, midface, lower). E.g., `'balanced'`, `'long lower third'`. |
-| `anatomical.jawlineDefinition` | `string \| null` | Jawline definition (e.g., `'strong'`, `'soft'`, `'moderate'`). |
-| `anatomical.cheekboneProminence` | `string \| null` | Cheekbone prominence (e.g., `'high and prominent'`, `'flat'`, `'moderate'`). |
-| `anatomical.chinShape` | `string \| null` | Chin shape (e.g., `'pointed'`, `'rounded'`, `'square'`, `'cleft'`). |
-| `anatomical.symmetryScore` | `string \| null` | Overall facial symmetry (e.g., `'high'`, `'moderate'`, `'slight asymmetry'`). |
-| `anatomical.symmetryNotes` | `string \| null` | Specific asymmetry observations, if any. |
-
----
-
-## Glasses Zone
-
-Measurement-based fitting data for eyewear recommendations. Combines ARKit-derived pupillary distance with AI face width analysis to recommend frame sizes.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `binocularPdMm` | `number \| null` | Binocular pupillary distance in mm. The most important measurement for lens fitting. |
-| `faceWidthMm` | `number \| null` | Total face width in mm, validated against PD-derived estimate. |
-| `bridgeWidthMm` | `number \| null` | Nose bridge width in mm. Determines bridge fit comfort. |
-| `frameSize` | `'small' \| 'medium' \| 'large' \| 'extra-large' \| null` | Recommended frame size category. |
-| `recommendedFrameWidthMinMm` | `number \| null` | Minimum recommended frame width in mm. |
-| `recommendedFrameWidthMaxMm` | `number \| null` | Maximum recommended frame width in mm. |
-| `wearsPrescription` | `boolean` | Whether the user wears prescription lenses. |
-
----
-
-## Full JSON Example
-
-A complete profile for a user with type 3B curly hair, oval face, thick density, and short top/sides.
+The scan grid is a 2x2 composite image showing the user from four angles. This is their current appearance as of their most recent reflection.
 
 ```json
 {
-  "ownerUid": "usr_8f2k4m9x",
-  "activeAppearanceId": "ap_3j7n1v5q",
-  "activeScanId": "scan_r4t8w2p6",
-  "schemaVersion": 2,
-  "lastAnalyzedAt": "2026-03-28T14:32:00Z",
-  "updatedAt": "2026-03-28T14:32:00Z",
-  "audience": "masculine",
-  "userOverrides": {
-    "hair.porosity": "2026-03-20T10:15:00Z",
-    "hair.heatStylingFrequency": "2026-03-20T10:15:00Z"
-  },
-
-  "hair": {
-    "textureFamily": 3,
-    "textureType": "3B",
-    "textureLabel": "Curly",
-    "density": "thick",
-    "strandThickness": "medium",
-
-    "lengths": {
-      "top": "short",
-      "sides": "short",
-      "back": "short",
-      "fringe": null
-    },
-
-    "naturalColor": "Black",
-    "naturalColorLevel": 2,
-    "currentColor": null,
-    "isColorTreated": false,
-    "undertone": "neutral",
-    "grayPercentage": 0,
-
-    "hairlineShape": "straight",
-    "templeRecession": "none",
-    "hairlineRecession": "none",
-    "crownThinning": "none",
-    "coverage": "full",
-    "hasFringe": false,
-
-    "growthPattern": {
-      "dominantDirection": "forward",
-      "cowlickLocations": ["crown"],
-      "naturalPartSide": "left",
-      "crownWhorl": "single"
-    },
-
-    "faceShape": "oval",
-    "headShapeProfile": "round",
-    "earProminence": "average",
-    "neckLength": "average",
-
-    "grooming": "well-groomed",
-    "estimatedWeeksSinceCut": 3,
-    "healthIndicators": "healthy sheen",
-    "damageLevel": "virgin",
-    "porosity": "normal",
-    "elasticity": "normal",
-
-    "chemicalHistory": null,
-    "colorHistory": null,
-    "heatStylingFrequency": "never",
-
-    "canGoShorter": true,
-    "canGoLonger": true,
-    "canFade": true,
-    "canLineup": true,
-    "canLighten": true,
-
-    "facialHair": {
-      "hasBeard": true,
-      "beardType": "stubble",
-      "beardColor": "Black",
-      "connectsToSideburns": true,
-      "coverage": "full"
-    },
-
-    "currentStyleDescription": "Short textured crop with natural curl definition",
-    "currentCutFamily": "scissor",
-    "canonicalStyleTypeId": "textured-crop",
-    "partingStyle": "none",
-    "volumeDistribution": "top-heavy",
-
-    "analyzedFromScanId": "scan_r4t8w2p6",
-    "analyzedAt": "2026-03-28T14:32:00Z"
-  },
-
-  "structural": {
-    "faceShape": "oval",
-    "faceWidth": 142.3,
-    "faceHeight": 198.7,
-    "jawWidth": 128.1,
-    "foreheadHeight": 62.4,
-    "widthToHeightRatio": 0.716,
-    "headShapeProfile": "round",
-    "foreheadProportion": "average",
-    "earProminence": "average",
-    "neckLength": "average",
-
-    "skinTone": {
-      "fitzpatrick": "Type V",
-      "undertone": "warm",
-      "description": "Dark brown with warm undertone"
-    },
-
-    "interOcularDistance": 63.2,
-    "interOcularRatio": 0.444,
-    "cheekboneWidth": 138.5,
-    "jawWidthLandmark": 126.8,
-    "foreheadWidth": 134.1,
-    "foreheadToChinRatio": 0.92,
-    "chinToNoseRatio": 0.85,
-    "noseLength": 48.3,
-    "nasalProjection": 22.1,
-    "chinProjection": 14.6,
-    "jawDepthLeft": 18.3,
-    "jawDepthRight": 17.9,
-
-    "anatomical": {
-      "lengthToWidthRatio": 1.40,
-      "thirdsBalance": "balanced",
-      "jawlineDefinition": "strong",
-      "cheekboneProminence": "moderate",
-      "chinShape": "rounded",
-      "symmetryScore": "high",
-      "symmetryNotes": null
-    }
-  },
-
-  "glasses": {
-    "binocularPdMm": 63.2,
-    "faceWidthMm": 142.3,
-    "bridgeWidthMm": 18.4,
-    "frameSize": "medium",
-    "recommendedFrameWidthMinMm": 133,
-    "recommendedFrameWidthMaxMm": 143,
-    "wearsPrescription": false,
-    "analyzedFromScanId": "scan_r4t8w2p6",
-    "analyzedAt": "2026-03-28T14:32:00Z"
-  },
-
-  "nails": null,
-  "tattoos": null
+  "scanGrid": "https://appearance.app/scans/usr_k7Xm/grid.jpg"
 }
 ```
 
----
+The URL is a signed link valid for 24 hours. Your app can display it directly or cache it.
 
-## User-Editable Fields
+With the `appearance:photos` scope, you also receive the individual scan angle photos.
 
-Five fields that AI cannot detect from photos. Users set these in their profile settings. When a user updates one, the field path and timestamp are recorded in `userOverrides`.
+## Structured fields
 
-| Field | Zone | Type | Why it's manual |
-|-------|------|------|-----------------|
-| `porosity` | Hair | `'low' \| 'normal' \| 'high'` | Requires a water absorption test — invisible in photos. |
-| `elasticity` | Hair | `'low' \| 'normal' \| 'high'` | Requires a stretch test — invisible in photos. |
-| `chemicalHistory` | Hair | `string[]` | Past treatments (relaxers, perms, keratin) aren't visible once grown out. |
-| `colorHistory` | Hair | `string` | Previous color treatments may not be visible in current state. |
-| `heatStylingFrequency` | Hair | `'never' \| 'occasional' \| 'regular' \| 'daily'` | Cumulative heat damage isn't always visible; frequency matters for product and treatment recommendations. |
+The structured data describes what the user looks like using typed, enumerated values.
 
----
+### Face
 
-## Profile vs. Card
+| Field | Type | Description |
+|-------|------|-------------|
+| `faceShape` | `string` | `oval`, `round`, `square`, `diamond`, `heart`, `oblong` |
+| `audience` | `string` | `masculine`, `feminine`, `androgynous` |
 
-The **Appearance Profile** is the full data set. The **[Appearance Card](/concepts/appearance-card)** is a compact, standardized extract designed for fast compatibility matching.
+### Hair
 
-|  | Profile | Card |
-|--|---------|------|
-| **Fields** | 50+ | ~25 |
-| **Values** | Mixed (strings, numbers, objects) | Enums only |
-| **Purpose** | Deep personalization | Quick compatibility reads |
-| **User-editable fields** | Yes (5 fields) | No |
-| **Physical measurements** | Yes (mm-precision) | No |
-| **Facial anatomy** | Yes (proportions, symmetry) | No |
-| **Growth patterns** | Yes (cowlicks, whorl, part) | No |
-| **Capabilities** | Yes (canFade, canLineup, etc.) | No |
-| **API Scope** | `appearance:profile` | `appearance:card` |
+| Field | Type | Description |
+|-------|------|-------------|
+| `hair.textureFamily` | `integer` | Andre Walker scale: 1 (straight), 2 (wavy), 3 (curly), 4 (coily) |
+| `hair.textureLabel` | `string` | Human-readable: `Straight`, `Wavy`, `Curly`, `Coily` |
+| `hair.density` | `string` | `thin`, `medium`, `thick` |
+| `hair.lengths.top` | `string` | `bald`, `stubble`, `short`, `medium`, `long` |
+| `hair.lengths.sides` | `string` | `bald`, `stubble`, `short`, `medium`, `long` |
 
-Use the **Profile** when you need the full picture — treatment planning, barber briefs, detailed product recommendations, or any feature that benefits from knowing growth patterns, damage level, or facial proportions.
+### Skin tone
 
-Use the **Card** when you need fast, structured matching — feed compatibility scoring, filter by texture family, or compare user-to-offering at scale.
+| Field | Type | Description |
+|-------|------|-------------|
+| `skinTone.fitzpatrick` | `string` | Fitzpatrick scale classification |
+| `skinTone.undertone` | `string` | `warm`, `cool`, `neutral` |
 
----
+### Measurements
 
-## API Access
+Physical measurements from ARKit facial geometry, in millimeters.
 
-Profiles are accessed via `GET /users/me/profile` with the `appearance:profile` scope.
+| Field | Type | Description |
+|-------|------|-------------|
+| `measurements.faceWidthMm` | `number` | Face width |
+| `measurements.jawWidthMm` | `number` | Jaw width |
+| `measurements.pdMm` | `number` | Pupillary distance |
 
-```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.appearance.app/v1/users/me/profile
+## Full response
+
+```json
+{
+  "scanGrid": "https://appearance.app/scans/usr_k7Xm/grid.jpg",
+  "faceShape": "oval",
+  "hair": {
+    "textureFamily": 3,
+    "textureLabel": "Curly",
+    "density": "thick",
+    "lengths": { "top": "short", "sides": "short" }
+  },
+  "skinTone": {
+    "fitzpatrick": "Type V",
+    "undertone": "warm"
+  },
+  "measurements": {
+    "faceWidthMm": 142.3,
+    "jawWidthMm": 126.1,
+    "pdMm": 63.5
+  },
+  "audience": "masculine",
+  "analyzedAt": "2026-03-29T10:30:00Z"
+}
 ```
 
-The response body matches the JSON structure shown above. Individual zones can be accessed via query parameter:
+Every field is typed and constrained to a known set of values. Your app can use them directly in logic without natural language interpretation.
 
-```bash
-# Hair zone only
-GET /users/me/profile?zone=hair
+## What's not included
 
-# Structural measurements only
-GET /users/me/profile?zone=structural
-```
+Appearance captures significantly more data internally — growth patterns, hair condition, facial proportions, styling capabilities. This data powers the Appearance app but is not shared through the API in the current version.
 
-<Card title="Get started" icon="rocket" href="/quickstart">
-  Set up API access and make your first profile request.
-</Card>
+As the platform expands, additional fields and zones will become available through new scopes.

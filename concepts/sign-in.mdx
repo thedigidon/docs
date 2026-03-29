@@ -1,125 +1,108 @@
 ---
 title: "Sign in with Appearance"
-description: "OAuth-based identity that shares how someone looks and wants to look — not just an email address."
+description: "OAuth-based identity that shares how someone looks — not just an email address."
 ---
 
-## The Concept
+Sign in with Appearance is an OAuth 2.0 flow that lets users share their appearance data with your app. When a user connects, your app immediately knows what they look like. No questionnaires. No photo uploads. No cold start.
 
-"Sign in with Appearance" is an OAuth 2.0 identity flow that lets users share their **appearance data** with third-party apps. When a user connects their Appearance account, the receiving app immediately "knows" what they look like — no questionnaires, no photo uploads, no cold start.
+## What makes it different
 
-<Note>
-  Sign in with Appearance is currently in development. This page documents the intended design. API access is available by request for early partners.
-</Note>
+Sign in with Google gives you an email and a name. Sign in with Appearance gives you a face shape, hair type, skin tone, and facial measurements. The user's experience is personalized from the first interaction.
 
-## Why It's Different
-
-| | Sign in with Google | Sign in with Appearance |
-|--|-------------------|----------------------|
-| **What you share** | Email, name, avatar | How you look, your style preferences, your face shape |
-| **First impression** | App knows your email | App knows your aesthetic |
-| **Cold start** | Still needs questionnaires | Immediate personalization |
-| **Value** | Saves typing an email | Eliminates appearance onboarding entirely |
-
-## How It Works
-
-### The Flow
+## The flow
 
 1. User taps "Connect with Appearance" in your app
-2. Appearance opens showing the user's own profile
-3. User sees exactly what will be shared and approves
-4. Your app receives an access token + appearance data
-5. The user's experience is immediately personalized
+2. Appearance opens, showing the user their own profile
+3. The user sees exactly what will be shared and approves
+4. Your app receives an access token and appearance data
 
-### The Consent Screen
+If the user doesn't have an Appearance profile, they create one during the flow. A scan takes about ten seconds.
 
-The consent moment is critical. Users are sharing intimate data about how they look. The consent screen must:
+## Scopes
 
-- Show the user their own appearance profile
-- Clearly list which data scopes the app is requesting
-- Show what will NOT be shared
-- Let the user approve or deny per-scope
+| Scope | What you receive |
+|-------|-----------------|
+| `profile` | Username, display name, avatar |
+| `appearance:read` | Scan grid image and structured appearance data |
+| `appearance:photos` | Individual scan angle photos |
 
-## Permission Scopes
+Request only the scopes you need. Users see exactly what each scope includes before approving.
 
-When requesting access, apps specify which scopes they need:
-
-| Scope | Data Returned | Use Case |
-|-------|--------------|----------|
-| `profile` | Username, display name, avatar, bio | Basic identity |
-| `appearance:card` | Full Appearance Card (texture, face shape, density, etc.) | Compatibility matching |
-| `appearance:profile` | Complete Appearance Profile (50+ fields) | Deep personalization |
-| `appearance:photos` | Signed URLs to scan photos | Visual reference |
-| `appearance:identity` | Visual Identity Snapshot (scan URL + key attributes) | Quick identification |
-
-## OAuth 2.0 Authorization Code Flow
+## Authorization
 
 ```
-1. Your App → Appearance
-   GET appearance.app/oauth/authorize
-     ?client_id=YOUR_CLIENT_ID
-     &redirect_uri=https://yourapp.com/callback
-     &scope=profile,appearance:card
-     &response_type=code
-     &state=RANDOM_STATE
-
-2. User approves on Appearance consent screen
-
-3. Appearance → Your App
-   GET https://yourapp.com/callback
-     ?code=AUTHORIZATION_CODE
-     &state=RANDOM_STATE
-
-4. Your App → Appearance API
-   POST api.appearance.app/v1/oauth/token
-   {
-     "grant_type": "authorization_code",
-     "code": "AUTHORIZATION_CODE",
-     "client_id": "YOUR_CLIENT_ID",
-     "client_secret": "YOUR_CLIENT_SECRET",
-     "redirect_uri": "https://yourapp.com/callback"
-   }
-
-5. Response:
-   {
-     "access_token": "at_...",
-     "refresh_token": "rt_...",
-     "expires_in": 3600,
-     "scope": "profile appearance:card"
-   }
+GET appearance.app/oauth/authorize
+  ?client_id=YOUR_CLIENT_ID
+  &redirect_uri=https://yourapp.com/callback
+  &scope=profile,appearance:read
+  &response_type=code
+  &state=RANDOM_STATE
 ```
 
-## What You Get Back
+After the user approves:
 
-With `profile` + `appearance:card` scopes:
+```
+GET https://yourapp.com/callback
+  ?code=AUTHORIZATION_CODE
+  &state=RANDOM_STATE
+```
+
+Exchange the code for tokens:
+
+```bash
+curl -X POST https://api.appearance.app/v1/oauth/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "grant_type": "authorization_code",
+    "code": "AUTHORIZATION_CODE",
+    "client_id": "YOUR_CLIENT_ID",
+    "client_secret": "YOUR_SECRET",
+    "redirect_uri": "https://yourapp.com/callback"
+  }'
+```
+
+```json
+{
+  "access_token": "at_...",
+  "refresh_token": "rt_...",
+  "expires_in": 3600,
+  "scope": "profile appearance:read"
+}
+```
+
+## What you receive
+
+With `profile` and `appearance:read` scopes:
 
 ```json
 {
   "user": {
     "uid": "usr_k7Xm9pL2qR4v",
     "username": "donaldm",
-    "displayName": "Donald",
-    "avatarUrl": "https://..."
+    "displayName": "Donald"
   },
-  "card": {
-    "cardType": "user",
-    "zone": "hair",
-    "textureFamily": 3,
-    "textureType": "3B",
-    "lengths": { "top": "short", "sides": "short" },
-    "density": "thick",
+  "appearance": {
+    "scanGrid": "https://appearance.app/scans/usr_k7Xm/grid.jpg",
     "faceShape": "oval",
+    "hair": {
+      "textureFamily": 3,
+      "textureLabel": "Curly",
+      "density": "thick",
+      "lengths": { "top": "short", "sides": "short" }
+    },
+    "skinTone": {
+      "fitzpatrick": "Type V",
+      "undertone": "warm"
+    },
+    "measurements": {
+      "faceWidthMm": 142.3,
+      "jawWidthMm": 126.1,
+      "pdMm": 63.5
+    },
     "audience": "masculine",
-    "holdRequired": null,
-    "shineLevel": null,
-    "dailyStylingTime": null,
-    "computedAt": "2026-03-29T10:30:00Z",
-    "cardVersion": 1
+    "analyzedAt": "2026-03-29T10:30:00Z"
   }
 }
 ```
 
-The receiving app can immediately:
-- Show recommendations that match the user's hair type
-- Skip "what's your hair type?" questionnaires
-- Personalize product suggestions based on face shape and coloring
-- Run compatibility checks against their own offerings
+Your app can immediately personalize the user's experience based on what they actually look like.

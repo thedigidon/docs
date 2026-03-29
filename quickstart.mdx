@@ -1,31 +1,25 @@
 ---
 title: "Quickstart"
-description: "Get your first user's appearance data in under 5 minutes."
+description: "Make your first API call in under five minutes."
 ---
 
-## Overview
-
-The Appearance API gives you structured appearance data for any consenting user — hair type, face shape, density, coloring, measurements, and more. No questionnaires. No photo uploads. One API call.
-
 <Note>
-  The Appearance API is currently in private beta. Request access at developers@appearance.app.
+  The Appearance API is in private beta. Request access at developers@appearance.app.
 </Note>
 
-## Step 1: Get API Credentials
+## 1. Get credentials
 
-Request API access to receive:
-- **API Key** (`ak_...`) — identifies your application
-- **OAuth Client ID + Secret** — for the "Sign in with Appearance" user flow
+Request API access to receive your API key (`ak_...`) and OAuth client credentials.
 
-## Step 2: Authenticate a User
+## 2. Authenticate a user
 
-Implement the "Sign in with Appearance" OAuth flow to get a user's access token:
+Redirect the user to the Appearance authorization screen. They see their own profile, choose what to share, and approve.
 
 ```bash
-# 1. Redirect user to Appearance authorization
-https://appearance.app/oauth/authorize?client_id=YOUR_ID&scope=profile,appearance:profile&response_type=code
+# Redirect to authorization
+https://appearance.app/oauth/authorize?client_id=YOUR_ID&scope=profile,appearance:read&response_type=code
 
-# 2. Exchange the authorization code for tokens
+# Exchange the code for tokens
 curl -X POST https://api.appearance.app/v1/oauth/token \
   -H "Content-Type: application/json" \
   -d '{
@@ -36,75 +30,42 @@ curl -X POST https://api.appearance.app/v1/oauth/token \
   }'
 ```
 
-## Step 3: Fetch the User's Appearance Profile
+## 3. Read the user's appearance
 
 ```bash
-curl https://api.appearance.app/v1/users/me/profile \
+curl https://api.appearance.app/v1/users/me/appearance \
   -H "X-Appearance-API-Key: ak_your_key" \
   -H "Authorization: Bearer at_user_token"
 ```
 
-Response — 50+ structured fields, from one face scan:
 ```json
 {
+  "scanGrid": "https://appearance.app/scans/usr_k7Xm/grid.jpg",
+  "faceShape": "oval",
   "hair": {
     "textureFamily": 3,
-    "textureType": "3B",
     "textureLabel": "Curly",
     "density": "thick",
-    "strandThickness": "medium",
-    "lengths": { "top": "short", "sides": "short", "back": "short", "fringe": null },
-    "naturalColor": "black",
-    "isColorTreated": false,
-    "undertone": "neutral",
-    "faceShape": "oval",
-    "coverage": "full",
-    "facialHair": {
-      "hasBeard": true,
-      "beardType": "short stubble",
-      "connectsToSideburns": true
-    },
-    "currentCutFamily": "fade",
-    "canGoShorter": true,
-    "canFade": true,
-    "canLighten": true
+    "lengths": { "top": "short", "sides": "short" }
   },
-  "structural": {
-    "faceShape": "oval",
-    "faceWidth": 142.3,
-    "jawWidth": 126.1,
-    "skinTone": {
-      "fitzpatrick": "Type V",
-      "undertone": "warm",
-      "description": "Brown skin with warm undertone"
-    }
+  "skinTone": {
+    "fitzpatrick": "Type V",
+    "undertone": "warm"
   },
-  "glasses": {
-    "binocularPdMm": 63.5,
+  "measurements": {
     "faceWidthMm": 142.3,
-    "frameSize": "medium",
-    "wearsPrescription": false
+    "jawWidthMm": 126.1,
+    "pdMm": 63.5
   },
-  "lastAnalyzedAt": "2026-03-29T10:30:00Z",
-  "schemaVersion": 2
+  "audience": "masculine",
+  "analyzedAt": "2026-03-29T10:30:00Z"
 }
 ```
 
-That's it. Your app now knows what this user looks like — without asking them a single question.
+Your app now knows what this user looks like.
 
-## What's Next
+## Next steps
 
-<Columns cols={2}>
-  <Card title="For AI Agents" icon="robot" href="/guides/agent-integration">
-    Connect any AI agent to Appearance data via MCP, REST, or OpenAPI.
-  </Card>
-  <Card title="Sign in with Appearance" icon="fingerprint" href="/concepts/sign-in">
-    Understand the full OAuth flow and permission scopes.
-  </Card>
-  <Card title="Profile Reference" icon="user" href="/concepts/appearance-profile">
-    Explore every field in the 50+ field profile schema.
-  </Card>
-  <Card title="API Reference" icon="terminal" href="/api-reference">
-    Full endpoint documentation with interactive playground.
-  </Card>
-</Columns>
+- [Sign in with Appearance](/concepts/sign-in) — Understand the full OAuth flow and permission scopes
+- [For AI Agents](/guides/agent-integration) — Connect any agent via MCP, REST, or OpenAPI
+- [API Reference](/api-reference) — Full endpoint documentation
