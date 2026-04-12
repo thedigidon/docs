@@ -3,37 +3,24 @@ title: "Appearance ID"
 description: "Your portable visual identity."
 ---
 
-Appearance ID is a user's portable visual identity — what they look like, structured, consented, and ready for any AI agent or app to use.
+Appearance ID is what you look like — captured once, usable anywhere.
 
-Users complete a single face scan. Appearance analyzes multi-angle photos to produce a structured profile. When a user connects their Appearance ID to your service, you receive their **Face** (reference images) and their **Look** (structured descriptors) immediately. No questionnaires. No photo uploads. No cold start.
+Users complete a face scan. When they connect their Appearance ID to your service, you receive reference photos of them. Your agent uses those photos to generate images of that person.
 
 ## What you receive
 
-When a user connects their Appearance ID, you get:
-
-- **Face** — Multi-angle scan photos and a 2x2 composite grid, ready for visual generation
-- **Look** — Face shape, hair type, texture, density, skin tone, and presentation as typed fields
-- **Generations** — The user's try-on history across all sources, including yours
-
-Every field is typed and constrained to known values. Your agent can use them directly without parsing natural language.
+Multi-angle reference photos of the user from their most recent scan.
 
 ## How it works
 
 1. Your agent connects to the Appearance MCP server
-2. The user authenticates and approves what to share
-3. Your agent calls `get_appearance` and receives Face + Look data
-4. After generating an image, call `save_generation` to store the result
+2. The user authenticates and approves sharing
+3. Your agent calls `get_appearance` and receives their photos
+4. Generate images using your own models with those photos as reference
+5. Call `save_generation` to store the result in the user's profile
 
-Results from every connected service appear in the user's unified timeline — one profile, many sources.
-
-## For AI agents
-
-Appearance ID is agent-first. Any AI service that needs to know what a user looks like can integrate through standard protocols.
-
-- **MCP Server** — Connect directly from ChatGPT, Claude, Cursor, or any MCP-compatible client
-- **OpenAPI 3.1** — Machine-readable API contract for automatic tool generation
-- **llms.txt** — Full documentation as markdown for context ingestion
+Results from every connected service appear in one place.
 
 <Card title="Get started" icon="arrow-right" href="/quickstart">
-  Connect to the Appearance API in under five minutes.
+  Connect in under five minutes.
 </Card>

@@ -1,57 +1,21 @@
 ---
 title: "Zones"
-description: "Appearance is organized by appearance zones — independent verticals that each capture a different aspect of how you look."
+description: "Appearance is organized by zones — independent verticals of how you look."
 ---
 
 ## What are Zones?
 
-An Appearance Zone is an independent vertical of human appearance. Each zone has its own data model, business types, and matching logic.
+An Appearance Zone is an independent vertical of human appearance. Each zone captures a different aspect of how you look.
 
-```typescript
-type AppearanceZone = 'hair' | 'glasses' | 'nails' | 'tattoos'
-```
-
-## Zone Registry
-
-| Zone | Status | Business Types | Model |
-|------|--------|---------------|-------|
-| **Hair** | Live | Barbershop, Salon | Style (provider uploads work, clients try on) |
-| **Glasses** | Live | Optician | Product (catalog-based, measurement fitting) |
-| **Nails** | Planned | Nail Studio | Style |
-| **Tattoos** | Planned | Tattoo Parlor | Style |
-
-## Business Types
-
-Each zone is served by one or more business types. Business types determine the UX copy, categories, and matching approach.
-
-| Business Type | Zone | Categories |
-|--------------|------|------------|
-| `barbershop` | Hair | Fade, Taper, Textured, Classic, Creative, Buzz, Long |
-| `salon` | Hair | Bob, Layers, Balayage, Blowout, Updo, Pixie, Long |
-| `optician` | Glasses | Rectangular, Round, Aviator, Cat Eye, Square, Oval |
-| `nail_studio` | Nails | Coming soon |
-| `tattoo_parlor` | Tattoos | Coming soon |
-
-## Business Models
-
-Two models determine how offerings work:
-
-| Model | Description | Business Types |
-|-------|-------------|---------------|
-| **Style** | Provider uploads photos of their work. Users try them on with AI generation. | Barbershop, Salon, Nail Studio, Tattoo Parlor |
-| **Product** | Business has a product catalog. Users try on individual products. | Optician |
+| Zone | Status |
+|------|--------|
+| **Hair** | Live |
+| **Glasses** | Live |
+| **Nails** | Planned |
+| **Tattoos** | Planned |
 
 ## Zones in the API
 
-When reading a user's Appearance ID, zone-specific fields are `null` when they don't apply. For example, `look.hair` is `null` if the user only has a glasses scan.
+When calling `save_generation` or `search_styles`, pass the `zone` parameter to scope to a specific zone.
 
-When calling `search_styles` or `save_generation`, pass the `zone` parameter to scope results to a specific zone.
-
-```json
-{
-  "look": {
-    "hair": { "textureType": "3B", "density": "thick", ... },
-    "glasses": null
-  }
-}
-```
+New zones will be announced as they launch.

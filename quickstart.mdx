@@ -7,15 +7,11 @@ description: "Connect to the Appearance API in under five minutes."
   The Appearance API is in private beta. Request access at developers@appearance.app.
 </Note>
 
-## Option A: MCP (recommended for agents)
+## 1. Get a dev token
 
-The fastest way for an AI agent to access a user's Appearance ID is through the MCP server.
+Request API access to receive your bearer token.
 
-### 1. Get a dev token
-
-Request API access to receive your development bearer token.
-
-### 2. Connect your MCP client
+## 2. Connect your MCP client
 
 <Tabs>
   <Tab title="ChatGPT">
@@ -48,9 +44,9 @@ Request API access to receive your development bearer token.
   </Tab>
 </Tabs>
 
-### 3. Call `get_appearance`
+## 3. Get the user's photos
 
-Your agent can now call tools on the MCP server. The primary tool is `get_appearance`:
+Call `get_appearance` to receive the user's reference photos:
 
 ```json
 {
@@ -64,98 +60,36 @@ Your agent can now call tools on the MCP server. The primary tool is `get_appear
 }
 ```
 
-Response:
+You'll receive multi-angle photos and a composite scan grid. Use these as reference to generate images of the user with your own models.
+
+## 4. Save results back
+
+After generating an image, store it in the user's profile:
 
 ```json
 {
-  "ok": true,
-  "data": {
-    "userId": "usr_k7Xm9pL2qR4v",
-    "face": {
-      "scanGridUrl": "https://storage.../scan-grid.jpg",
-      "angles": {
-        "front": "https://storage.../front.jpg",
-        "left": "https://storage.../left.jpg",
-        "right": "https://storage.../right.jpg"
-      },
-      "scannedAt": "2026-03-29T10:30:00Z"
-    },
-    "look": {
-      "faceShape": "oval",
-      "skinTone": {
-        "fitzpatrick": "Type V",
-        "undertone": "warm",
-        "description": "Warm medium-deep"
-      },
-      "audience": "masculine",
-      "hair": {
-        "textureType": "3B",
-        "textureLabel": "Curly",
-        "density": "thick",
-        "naturalColor": "dark brown",
-        "currentColor": null,
-        "isColorTreated": false,
-        "lengths": { "top": "short", "sides": "short", "back": "short", "fringe": null },
-        "facialHair": { "hasBeard": true, "beardType": "stubble" }
-      },
-      "glasses": null
-    },
-    "updatedAt": "2026-03-29T10:30:00Z"
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "save_generation",
+    "arguments": {
+      "imageUrl": "https://your-service.com/generated/abc123.jpg",
+      "zone": "hair",
+      "styleName": "Curtain Bangs"
+    }
   }
 }
 ```
 
-Your agent now knows what this user looks like.
-
-## Option B: REST API
-
-For non-agent integrations, the same data is available via REST.
-
-### 1. Authenticate a user
-
-Redirect the user to the Appearance authorization screen:
-
-```bash
-https://appearance.app/oauth/authorize
-  ?client_id=YOUR_ID
-  &scope=appearance:read,generations:read
-  &response_type=code
-```
-
-### 2. Exchange the code for tokens
-
-```bash
-curl -X POST https://appearance.app/api/oauth/token \
-  -H "Content-Type: application/json" \
-  -d '{
-    "grant_type": "authorization_code",
-    "code": "AUTH_CODE",
-    "client_id": "YOUR_CLIENT_ID",
-    "client_secret": "YOUR_SECRET"
-  }'
-```
-
-### 3. Read the user's Appearance ID
-
-```bash
-curl https://appearance.app/api/v1/users/me/appearance \
-  -H "Authorization: Bearer at_user_token"
-```
-
-The response shape is identical to the MCP `get_appearance` tool above.
+The result appears in the user's Appearance app alongside results from every other connected service.
 
 ## Available tools
 
-| Tool | Scope | Description |
-|------|-------|-------------|
-| `get_appearance` | `appearance:read` | Face images + Look descriptors |
-| `get_scan_grid` | `appearance:read` | Face images only (lighter) |
-| `search_styles` | `styles:search` | Search business styles |
-| `save_generation` | `generations:write` | Save a result to the user's timeline |
-| `list_generations` | `generations:read` | Browse generation history |
-
-## Next steps
-
-- [Appearance ID](/concepts/appearance-id) — What Face and Look contain
-- [Sign in with Appearance](/concepts/sign-in) — Full OAuth flow
-- [For AI Agents](/guides/agent-integration) — MCP tool reference and examples
+| Tool | Description |
+|------|-------------|
+| `get_appearance` | Get the user's reference photos |
+| `get_scan_grid` | Get just the scan grid image |
+| `save_generation` | Save a generated result to the user's profile |
+| `list_generations` | Browse the user's generation history |
+| `search_styles` | Search styles from businesses on Appearance |

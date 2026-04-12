@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Appearance API",
-    "description": "Access a user's Appearance ID — their portable visual identity. Face images and structured Look descriptors, available via MCP or REST.",
+    "description": "Access a user's Appearance ID — reference photos for visual generation.",
     "version": "0.2.0",
     "contact": {
       "name": "Appearance Developer Support",
@@ -24,12 +24,12 @@
     "/v1/users/me/appearance": {
       "get": {
         "summary": "Get user's Appearance ID",
-        "description": "Returns the authenticated user's Appearance ID — Face (scan images) and Look (structured descriptors).",
+        "description": "Returns the authenticated user's reference photos from their most recent face scan.",
         "operationId": "getAppearance",
         "tags": ["Appearance ID"],
         "responses": {
           "200": {
-            "description": "The user's Appearance ID",
+            "description": "The user's reference photos",
             "content": {
               "application/json": {
                 "schema": {
@@ -40,7 +40,7 @@
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "404": {
-            "description": "User has no appearance data (no scan completed)"
+            "description": "User has no scan (no photos available)"
           }
         }
       }
@@ -48,21 +48,19 @@
     "/v1/users/me/generations": {
       "get": {
         "summary": "List generations",
-        "description": "Returns the user's generation history across all zones and sources.",
+        "description": "Returns the user's generation history across all services.",
         "operationId": "listGenerations",
         "tags": ["Generations"],
         "parameters": [
           {
             "name": "zone",
             "in": "query",
-            "schema": { "type": "string", "enum": ["hair", "glasses"] },
-            "description": "Filter by appearance zone"
+            "schema": { "type": "string", "enum": ["hair", "glasses"] }
           },
           {
             "name": "limit",
             "in": "query",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 },
-            "description": "Maximum results to return"
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
           }
         ],
         "responses": {
@@ -87,7 +85,7 @@
       },
       "post": {
         "summary": "Save generation",
-        "description": "Save an AI-generated appearance result to the user's unified timeline.",
+        "description": "Save a generated image to the user's profile.",
         "operationId": "saveGeneration",
         "tags": ["Generations"],
         "requestBody": {
@@ -98,10 +96,9 @@
                 "type": "object",
                 "required": ["imageUrl", "zone"],
                 "properties": {
-                  "imageUrl": { "type": "string", "format": "uri", "description": "URL of the generated image" },
-                  "zone": { "type": "string", "enum": ["hair", "glasses"], "description": "Appearance zone" },
-                  "styleName": { "type": "string", "description": "Human-readable name for this look" },
-                  "sourceStyleId": { "type": "string", "description": "Appearance style ID if based on a business style" }
+                  "imageUrl": { "type": "string", "format": "uri" },
+                  "zone": { "type": "string", "enum": ["hair", "glasses"] },
+                  "styleName": { "type": "string" }
                 }
               }
             }
@@ -126,7 +123,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "User's access token from Sign in with Appearance"
+        "description": "Access token from Sign in with Appearance"
       }
     },
     "responses": {
@@ -137,91 +134,34 @@
     "schemas": {
       "AppearanceId": {
         "type": "object",
-        "description": "A user's Appearance ID — Face images and Look descriptors.",
+        "description": "A user's reference photos from their face scan.",
         "properties": {
           "userId": { "type": "string" },
-          "face": { "$ref": "#/components/schemas/Face" },
-          "look": { "$ref": "#/components/schemas/Look" },
-          "updatedAt": { "type": "string", "format": "date-time" }
-        }
-      },
-      "Face": {
-        "type": "object",
-        "description": "The user's face reference images.",
-        "properties": {
-          "scanGridUrl": { "type": "string", "format": "uri", "description": "Signed URL to the 2x2 scan grid" },
-          "angles": {
+          "face": {
             "type": "object",
             "properties": {
-              "front": { "type": "string", "format": "uri" },
-              "left": { "type": "string", "format": "uri" },
-              "right": { "type": "string", "format": "uri" }
-            }
-          },
-          "scannedAt": { "type": "string", "format": "date-time" }
-        }
-      },
-      "Look": {
-        "type": "object",
-        "description": "Structured appearance descriptors — facts about how the user looks.",
-        "properties": {
-          "faceShape": { "type": "string", "enum": ["oval", "round", "square", "diamond", "heart", "oblong"] },
-          "skinTone": {
-            "type": "object",
-            "properties": {
-              "fitzpatrick": { "type": "string" },
-              "undertone": { "type": "string", "enum": ["warm", "cool", "neutral"] },
-              "description": { "type": "string" }
-            }
-          },
-          "audience": { "type": "string", "enum": ["masculine", "feminine", "androgynous"] },
-          "hair": {
-            "type": "object",
-            "properties": {
-              "textureType": { "type": "string", "description": "Andre Walker subtype (1A–4C)" },
-              "textureLabel": { "type": "string", "enum": ["Straight", "Wavy", "Curly", "Coily"] },
-              "density": { "type": "string", "enum": ["thin", "medium", "thick"] },
-              "naturalColor": { "type": "string" },
-              "currentColor": { "type": "string", "nullable": true },
-              "isColorTreated": { "type": "boolean" },
-              "lengths": {
+              "scanGridUrl": { "type": "string", "format": "uri", "description": "2x2 composite scan grid" },
+              "angles": {
                 "type": "object",
                 "properties": {
-                  "top": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] },
-                  "sides": { "type": "string" },
-                  "back": { "type": "string" },
-                  "fringe": { "type": "string", "nullable": true }
+                  "front": { "type": "string", "format": "uri" },
+                  "left": { "type": "string", "format": "uri" },
+                  "right": { "type": "string", "format": "uri" }
                 }
               },
-              "facialHair": {
-                "type": "object",
-                "nullable": true,
-                "properties": {
-                  "hasBeard": { "type": "boolean" },
-                  "beardType": { "type": "string" }
-                }
-              }
+              "scannedAt": { "type": "string", "format": "date-time" }
             }
           },
-          "glasses": {
-            "type": "object",
-            "nullable": true,
-            "properties": {
-              "frameSize": { "type": "string", "enum": ["small", "medium", "large", "extra-large"] },
-              "wearsPrescription": { "type": "boolean" }
-            }
-          }
+          "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
       "Generation": {
         "type": "object",
-        "description": "A single try-on result from any source.",
+        "description": "A generated image from any service.",
         "properties": {
           "id": { "type": "string" },
           "zone": { "type": "string" },
           "imageUrl": { "type": "string", "format": "uri" },
-          "thumbnailUrl": { "type": "string", "format": "uri", "nullable": true },
-          "source": { "type": "string", "description": "What type of style (business_style, user, remix)" },
           "generationService": { "type": "string", "description": "Which service generated this (appearance, chatgpt, claude)" },
           "styleName": { "type": "string", "nullable": true },
           "createdAt": { "type": "string", "format": "date-time" }

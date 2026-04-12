@@ -1,33 +1,29 @@
 ---
 title: "Sign in with Appearance"
-description: "OAuth-based identity that shares how someone looks — not just an email address."
+description: "OAuth-based identity that shares what someone looks like."
 ---
 
-Sign in with Appearance is an OAuth 2.1 flow that lets users share their Appearance ID with your app. When a user connects, your app immediately knows what they look like.
-
-## What makes it different
-
-Sign in with Google gives you an email and a name. Sign in with Appearance gives you a face shape, hair type, skin tone, and visual reference photos. The user's experience is personalized from the first interaction.
+Sign in with Appearance lets users share their reference photos with your service. When a user connects, you can immediately generate images of them.
 
 ## The flow
 
 1. User taps "Connect with Appearance" in your app
-2. Appearance opens, showing the user their own profile
-3. The user sees exactly what will be shared and approves
-4. Your app receives an access token and Appearance ID data
+2. Appearance shows the user what will be shared
+3. The user approves
+4. Your service receives an access token and can call the API
 
-If the user doesn't have an Appearance profile, they create one during the flow. A scan takes about ten seconds.
+If the user doesn't have an Appearance profile yet, they create one during the flow. A scan takes about ten seconds.
 
 ## Scopes
 
 | Scope | What you receive |
 |-------|-----------------|
-| `appearance:read` | Face images (scan grid + angles) and Look descriptors |
-| `generations:read` | The user's generation history across all services |
-| `generations:write` | Ability to save generated results to the user's timeline |
-| `styles:search` | Search available styles from businesses on Appearance |
+| `appearance:read` | Reference photos from the user's face scan |
+| `generations:read` | The user's generation history |
+| `generations:write` | Ability to save results to the user's profile |
+| `styles:search` | Search styles from businesses on Appearance |
 
-Request only the scopes you need. Users see exactly what each scope includes before approving.
+Request only the scopes you need.
 
 ## Authorization
 
@@ -37,14 +33,6 @@ GET appearance.app/oauth/authorize
   &redirect_uri=https://yourapp.com/callback
   &scope=appearance:read,generations:read
   &response_type=code
-  &state=RANDOM_STATE
-```
-
-After the user approves:
-
-```
-GET https://yourapp.com/callback
-  ?code=AUTHORIZATION_CODE
   &state=RANDOM_STATE
 ```
 
@@ -61,54 +49,3 @@ curl -X POST https://appearance.app/api/oauth/token \
     "redirect_uri": "https://yourapp.com/callback"
   }'
 ```
-
-```json
-{
-  "access_token": "at_...",
-  "refresh_token": "rt_...",
-  "expires_in": 3600,
-  "scope": "appearance:read generations:read"
-}
-```
-
-## What you receive
-
-With the `appearance:read` scope, calling `get_appearance` returns:
-
-```json
-{
-  "userId": "usr_k7Xm9pL2qR4v",
-  "face": {
-    "scanGridUrl": "https://storage.../scan-grid.jpg",
-    "angles": {
-      "front": "https://storage.../front.jpg",
-      "left": "https://storage.../left.jpg",
-      "right": "https://storage.../right.jpg"
-    },
-    "scannedAt": "2026-03-29T10:30:00Z"
-  },
-  "look": {
-    "faceShape": "oval",
-    "skinTone": {
-      "fitzpatrick": "Type V",
-      "undertone": "warm",
-      "description": "Warm medium-deep"
-    },
-    "audience": "masculine",
-    "hair": {
-      "textureType": "3B",
-      "textureLabel": "Curly",
-      "density": "thick",
-      "naturalColor": "dark brown",
-      "currentColor": null,
-      "isColorTreated": false,
-      "lengths": { "top": "short", "sides": "short", "back": "short", "fringe": null },
-      "facialHair": { "hasBeard": true, "beardType": "stubble" }
-    },
-    "glasses": null
-  },
-  "updatedAt": "2026-03-29T10:30:00Z"
-}
-```
-
-Your app can immediately personalize the user's experience based on what they actually look like.

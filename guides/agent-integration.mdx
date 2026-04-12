@@ -3,19 +3,18 @@ title: "For AI Agents"
 description: "How any AI agent can connect to a user's Appearance ID."
 ---
 
-Appearance ID is built for AI agents. Any agent that needs to know what a user looks like can connect through the MCP server and access structured appearance data.
+Any agent that needs to generate images of a user can connect through the Appearance MCP server and receive their reference photos.
 
 ## Connect via MCP
 
-The Appearance API is an MCP server at `https://appearance.app/api/mcp`. Any MCP-compatible client can discover and call tools.
+The Appearance API is an MCP server at `https://appearance.app/api/mcp`.
 
 <Tabs>
   <Tab title="ChatGPT">
-    Register as a ChatGPT app via the Apps SDK. The MCP endpoint is:
+    Register as a ChatGPT app. The MCP endpoint is:
     ```
     https://appearance.app/api/mcp
     ```
-    ChatGPT will discover available tools automatically via `tools/list`.
   </Tab>
   <Tab title="Claude Code">
     ```bash
@@ -37,110 +36,31 @@ The Appearance API is an MCP server at `https://appearance.app/api/mcp`. Any MCP
     }
     ```
   </Tab>
-  <Tab title="VS Code">
-    ```json
-    {
-      "servers": {
-        "appearance": {
-          "type": "http",
-          "url": "https://appearance.app/api/mcp",
-          "headers": {
-            "Authorization": "Bearer YOUR_TOKEN"
-          }
-        }
-      }
-    }
-    ```
-  </Tab>
 </Tabs>
+
+## Example flow
+
+```
+User: "What would I look like with a buzz cut?"
+Agent: [calls get_appearance → receives reference photos]
+Agent: [generates image using own model with photos as reference]
+Agent: [calls save_generation → result stored in user's profile]
+Agent: "Here's how you'd look. Saved to your Appearance profile."
+```
 
 ## Available tools
 
-| Tool | Scope | Description |
-|------|-------|-------------|
-| `get_appearance` | `appearance:read` | Get the user's Face (images) + Look (descriptors) |
-| `get_scan_grid` | `appearance:read` | Get just the face reference images |
-| `search_styles` | `styles:search` | Search styles from businesses on Appearance |
-| `save_generation` | `generations:write` | Save a generated result to the user's timeline |
-| `list_generations` | `generations:read` | List the user's generation history |
-
-## How agents use Appearance ID
-
-### Visual generation
-
-The primary use case. The agent reads the user's Face and uses it as reference for image generation with the agent's own models.
-
-```
-User: "What would I look like with curtain bangs?"
-Agent: [calls get_appearance → receives face scan + look data]
-Agent: [generates image using GPT-4o / Claude / own model with face as reference]
-Agent: [calls save_generation → result stored in user's Appearance timeline]
-Agent: "Here's how you'd look. I've saved it to your Appearance profile."
-```
-
-### Personalizing other tasks
-
-The agent reads Look descriptors to personalize work that isn't directly about appearance.
-
-```
-Agent building a travel packing list:
-  → Calls get_appearance
-  → Reads hair.textureLabel = "Curly", hair.density = "thick"
-  → Includes curl-friendly travel products in recommendations
-```
-
-### Saving results back
-
-After generating an image, save it to the user's unified timeline:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "save_generation",
-    "arguments": {
-      "imageUrl": "https://your-service.com/generated/abc123.jpg",
-      "zone": "hair",
-      "styleName": "Curtain Bangs"
-    }
-  }
-}
-```
-
-The result appears in the user's Appearance app alongside results from every other connected service.
-
-## Authentication
-
-The MCP server uses Bearer token authentication. In development, use your dev token. In production, OAuth 2.1 with PKCE handles user authentication.
-
-```
-Authorization: Bearer YOUR_TOKEN
-```
+| Tool | Description |
+|------|-------------|
+| `get_appearance` | Get the user's reference photos |
+| `get_scan_grid` | Get just the scan grid image |
+| `save_generation` | Save a generated result to the user's profile |
+| `list_generations` | Browse the user's generation history |
+| `search_styles` | Search styles from businesses on Appearance |
 
 ## Discovery
 
-### llms.txt
-
-Full documentation as a single markdown file:
-
 ```
 https://appearance.mintlify.app/llms.txt
-https://appearance.mintlify.app/llms-full.txt
-```
-
-### OpenAPI
-
-Machine-readable API contract:
-
-```
 https://appearance.mintlify.app/api-reference/openapi.json
 ```
-
-## Rate limits
-
-| Scope | Limit |
-|-------|-------|
-| Per token | 60 requests/minute |
-| Per user | 120 requests/minute |
