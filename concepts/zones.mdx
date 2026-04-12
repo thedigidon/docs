@@ -41,35 +41,17 @@ Two models determine how offerings work:
 | **Style** | Provider uploads photos of their work. Users try them on with AI generation. | Barbershop, Salon, Nail Studio, Tattoo Parlor |
 | **Product** | Business has a product catalog. Users try on individual products. | Optician |
 
-## Zone-Aware Matching
+## Zones in the API
 
-Each zone uses different matching strategies:
+When reading a user's Appearance ID, zone-specific fields are `null` when they don't apply. For example, `look.hair` is `null` if the user only has a glasses scan.
 
-**Hair** — Card-based structured matching (texture, length, density, face shape) at 90% weight + embedding aesthetic similarity at 10%.
-
-**Glasses** — Measurement-based fitting (pupillary distance, face width, bridge width) at 60% weight + face shape compatibility at 25% + embedding similarity at 15%.
-
-**Nails / Tattoos** — Planned. Expected to lean heavily on aesthetic matching (embedding similarity) since physical compatibility constraints are minimal.
-
-## Zone in API Responses
-
-Every Appearance Card, Profile, and Recommendation includes a `zone` field. When consuming the API, filter by zone to get relevant data:
+When calling `search_styles` or `save_generation`, pass the `zone` parameter to scope results to a specific zone.
 
 ```json
-// User's hair card
 {
-  "cardType": "user",
-  "zone": "hair",
-  "textureFamily": 3,
-  "faceShape": "oval"
-}
-
-// User's glasses profile
-{
-  "zone": "glasses",
-  "binocularPdMm": 64,
-  "frameSize": "medium"
+  "look": {
+    "hair": { "textureType": "3B", "density": "thick", ... },
+    "glasses": null
+  }
 }
 ```
-
-Zone-specific fields are `null` when they don't apply. For example, `textureFamily` is always `null` on a glasses card.

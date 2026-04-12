@@ -1,39 +1,39 @@
 ---
-title: "Social Technologies"
-description: "The identity layer of the internet."
+title: "Appearance ID"
+description: "Your portable visual identity."
 ---
 
-Appearance captures what a person looks like — structured, consented, and ready for any app to use.
+Appearance ID is a user's portable visual identity — what they look like, structured, consented, and ready for any AI agent or app to use.
 
-Users complete a single face scan. Appearance analyzes multi-angle photos to produce a structured profile: face shape, hair texture, density, skin tone, and measurements. When a user connects their Appearance to your app, you receive this data immediately. No questionnaires. No photo uploads.
+Users complete a single face scan. Appearance analyzes multi-angle photos to produce a structured profile. When a user connects their Appearance ID to your service, you receive their **Face** (reference images) and their **Look** (structured descriptors) immediately. No questionnaires. No photo uploads. No cold start.
 
 ## What you receive
 
-When a user authorizes your app through Sign in with Appearance, you get:
+When a user connects their Appearance ID, you get:
 
-- **Scan grid** — A 2x2 composite image of the user's current appearance from their most recent reflection
-- **Structured profile** — Face shape, hair type, texture, density, skin tone, and facial measurements as typed fields
-- **Original photos** — Optionally, the individual scan angles (requires additional consent)
+- **Face** — Multi-angle scan photos and a 2x2 composite grid, ready for visual generation
+- **Look** — Face shape, hair type, texture, density, skin tone, and presentation as typed fields
+- **Generations** — The user's try-on history across all sources, including yours
 
-Every field is typed and constrained to known values. Your app can use them directly in logic without parsing natural language.
+Every field is typed and constrained to known values. Your agent can use them directly without parsing natural language.
 
 ## How it works
 
-1. Your app redirects the user to Appearance
-2. The user sees their profile and approves what to share
-3. Your app receives an access token and appearance data
-4. The user's experience is personalized from the first interaction
+1. Your agent connects to the Appearance MCP server
+2. The user authenticates and approves what to share
+3. Your agent calls `get_appearance` and receives Face + Look data
+4. After generating an image, call `save_generation` to store the result
 
-If the user doesn't have an Appearance profile yet, they can create one during the flow. A scan takes about ten seconds.
+Results from every connected service appear in the user's unified timeline — one profile, many sources.
 
 ## For AI agents
 
-Appearance is discoverable through standard protocols. Any agent that needs to know what a user looks like can integrate without custom work.
+Appearance ID is agent-first. Any AI service that needs to know what a user looks like can integrate through standard protocols.
 
-- **MCP Server** — Query documentation and API from any MCP-compatible client
-- **llms.txt** — Full documentation as a single markdown file for context ingestion
+- **MCP Server** — Connect directly from ChatGPT, Claude, Cursor, or any MCP-compatible client
 - **OpenAPI 3.1** — Machine-readable API contract for automatic tool generation
+- **llms.txt** — Full documentation as markdown for context ingestion
 
 <Card title="Get started" icon="arrow-right" href="/quickstart">
-  Make your first API call in under five minutes.
+  Connect to the Appearance API in under five minutes.
 </Card>

@@ -1,26 +1,131 @@
 ---
 title: "Quickstart"
-description: "Make your first API call in under five minutes."
+description: "Connect to the Appearance API in under five minutes."
 ---
 
 <Note>
   The Appearance API is in private beta. Request access at developers@appearance.app.
 </Note>
 
-## 1. Get credentials
+## Option A: MCP (recommended for agents)
 
-Request API access to receive your API key (`ak_...`) and OAuth client credentials.
+The fastest way for an AI agent to access a user's Appearance ID is through the MCP server.
 
-## 2. Authenticate a user
+### 1. Get a dev token
 
-Redirect the user to the Appearance authorization screen. They see their own profile, choose what to share, and approve.
+Request API access to receive your development bearer token.
+
+### 2. Connect your MCP client
+
+<Tabs>
+  <Tab title="ChatGPT">
+    Register the Appearance MCP server as a ChatGPT app connector:
+    ```
+    URL: https://appearance.app/api/mcp
+    Transport: HTTP POST
+    Auth: Bearer token
+    ```
+  </Tab>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add --transport http appearance https://appearance.app/api/mcp \
+      --header "Authorization: Bearer YOUR_TOKEN"
+    ```
+  </Tab>
+  <Tab title="Cursor">
+    ```json
+    {
+      "mcpServers": {
+        "appearance": {
+          "url": "https://appearance.app/api/mcp",
+          "headers": {
+            "Authorization": "Bearer YOUR_TOKEN"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### 3. Call `get_appearance`
+
+Your agent can now call tools on the MCP server. The primary tool is `get_appearance`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_appearance",
+    "arguments": {}
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "userId": "usr_k7Xm9pL2qR4v",
+    "face": {
+      "scanGridUrl": "https://storage.../scan-grid.jpg",
+      "angles": {
+        "front": "https://storage.../front.jpg",
+        "left": "https://storage.../left.jpg",
+        "right": "https://storage.../right.jpg"
+      },
+      "scannedAt": "2026-03-29T10:30:00Z"
+    },
+    "look": {
+      "faceShape": "oval",
+      "skinTone": {
+        "fitzpatrick": "Type V",
+        "undertone": "warm",
+        "description": "Warm medium-deep"
+      },
+      "audience": "masculine",
+      "hair": {
+        "textureType": "3B",
+        "textureLabel": "Curly",
+        "density": "thick",
+        "naturalColor": "dark brown",
+        "currentColor": null,
+        "isColorTreated": false,
+        "lengths": { "top": "short", "sides": "short", "back": "short", "fringe": null },
+        "facialHair": { "hasBeard": true, "beardType": "stubble" }
+      },
+      "glasses": null
+    },
+    "updatedAt": "2026-03-29T10:30:00Z"
+  }
+}
+```
+
+Your agent now knows what this user looks like.
+
+## Option B: REST API
+
+For non-agent integrations, the same data is available via REST.
+
+### 1. Authenticate a user
+
+Redirect the user to the Appearance authorization screen:
 
 ```bash
-# Redirect to authorization
-https://appearance.app/oauth/authorize?client_id=YOUR_ID&scope=profile,appearance:read&response_type=code
+https://appearance.app/oauth/authorize
+  ?client_id=YOUR_ID
+  &scope=appearance:read,generations:read
+  &response_type=code
+```
 
-# Exchange the code for tokens
-curl -X POST https://api.appearance.app/v1/oauth/token \
+### 2. Exchange the code for tokens
+
+```bash
+curl -X POST https://appearance.app/api/oauth/token \
   -H "Content-Type: application/json" \
   -d '{
     "grant_type": "authorization_code",
@@ -30,42 +135,27 @@ curl -X POST https://api.appearance.app/v1/oauth/token \
   }'
 ```
 
-## 3. Read the user's appearance
+### 3. Read the user's Appearance ID
 
 ```bash
-curl https://api.appearance.app/v1/users/me/appearance \
-  -H "X-Appearance-API-Key: ak_your_key" \
+curl https://appearance.app/api/v1/users/me/appearance \
   -H "Authorization: Bearer at_user_token"
 ```
 
-```json
-{
-  "scanGrid": "https://appearance.app/scans/usr_k7Xm/grid.jpg",
-  "faceShape": "oval",
-  "hair": {
-    "textureFamily": 3,
-    "textureLabel": "Curly",
-    "density": "thick",
-    "lengths": { "top": "short", "sides": "short" }
-  },
-  "skinTone": {
-    "fitzpatrick": "Type V",
-    "undertone": "warm"
-  },
-  "measurements": {
-    "faceWidthMm": 142.3,
-    "jawWidthMm": 126.1,
-    "pdMm": 63.5
-  },
-  "audience": "masculine",
-  "analyzedAt": "2026-03-29T10:30:00Z"
-}
-```
+The response shape is identical to the MCP `get_appearance` tool above.
 
-Your app now knows what this user looks like.
+## Available tools
+
+| Tool | Scope | Description |
+|------|-------|-------------|
+| `get_appearance` | `appearance:read` | Face images + Look descriptors |
+| `get_scan_grid` | `appearance:read` | Face images only (lighter) |
+| `search_styles` | `styles:search` | Search business styles |
+| `save_generation` | `generations:write` | Save a result to the user's timeline |
+| `list_generations` | `generations:read` | Browse generation history |
 
 ## Next steps
 
-- [Sign in with Appearance](/concepts/sign-in) — Understand the full OAuth flow and permission scopes
-- [For AI Agents](/guides/agent-integration) — Connect any agent via MCP, REST, or OpenAPI
-- [API Reference](/api-reference) — Full endpoint documentation
+- [Appearance ID](/concepts/appearance-id) — What Face and Look contain
+- [Sign in with Appearance](/concepts/sign-in) — Full OAuth flow
+- [For AI Agents](/guides/agent-integration) — MCP tool reference and examples

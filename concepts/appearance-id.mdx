@@ -1,0 +1,85 @@
+---
+title: "Appearance ID"
+description: "What you receive when a user shares their Appearance ID — Face images and Look descriptors."
+---
+
+When a user connects their Appearance ID, you receive two things: their **Face** and their **Look**.
+
+## Face
+
+The user's reference images from their most recent scan.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `face.scanGridUrl` | `string` | Signed URL to the 2x2 composite scan grid |
+| `face.angles.front` | `string` | Front-facing photo |
+| `face.angles.left` | `string` | Left profile photo |
+| `face.angles.right` | `string` | Right profile photo |
+| `face.scannedAt` | `string` | ISO 8601 timestamp of the scan |
+
+URLs are signed and short-lived. Cache the images if you need them beyond a single session.
+
+With the scan grid, your agent has enough visual reference to generate images of the user.
+
+## Look
+
+Structured descriptors of the user's appearance — typed, enumerated values ready for logic.
+
+### Face shape and skin
+
+| Field | Type | Values |
+|-------|------|--------|
+| `look.faceShape` | `string` | `oval`, `round`, `square`, `diamond`, `heart`, `oblong` |
+| `look.skinTone.fitzpatrick` | `string` | Fitzpatrick scale classification |
+| `look.skinTone.undertone` | `string` | `warm`, `cool`, `neutral` |
+| `look.skinTone.description` | `string` | Human-readable description |
+| `look.audience` | `string` | `masculine`, `feminine`, `androgynous` |
+
+### Hair
+
+| Field | Type | Values |
+|-------|------|--------|
+| `look.hair.textureType` | `string` | Andre Walker subtype: `1A`–`4C` |
+| `look.hair.textureLabel` | `string` | `Straight`, `Wavy`, `Curly`, `Coily` |
+| `look.hair.density` | `string` | `thin`, `medium`, `thick` |
+| `look.hair.naturalColor` | `string` | Natural hair color |
+| `look.hair.currentColor` | `string` | Current color (if different) |
+| `look.hair.isColorTreated` | `boolean` | Whether color-treated |
+| `look.hair.lengths.top` | `string` | `bald`, `stubble`, `short`, `medium`, `long` |
+| `look.hair.lengths.sides` | `string` | Same scale |
+| `look.hair.lengths.back` | `string` | Same scale |
+| `look.hair.facialHair.hasBeard` | `boolean` | Whether the user has facial hair |
+| `look.hair.facialHair.beardType` | `string` | Type of facial hair |
+
+### Glasses
+
+| Field | Type | Values |
+|-------|------|--------|
+| `look.glasses.frameSize` | `string` | `small`, `medium`, `large`, `extra-large` |
+| `look.glasses.wearsPrescription` | `boolean` | Whether they wear prescription lenses |
+
+## What's not included
+
+Appearance captures significantly more data internally — growth patterns, facial geometry measurements, hair condition, styling capabilities, and compatibility intelligence. This data powers the Appearance app's recommendations but is not shared through the API.
+
+As the platform expands, additional fields may become available through new scopes.
+
+## Generations
+
+Every result generated using a user's Appearance ID — from any service — is stored in their unified timeline:
+
+```json
+{
+  "id": "gen_abc123",
+  "zone": "hair",
+  "imageUrl": "https://...",
+  "source": "business_style",
+  "generationService": "chatgpt",
+  "styleName": "Textured Crop",
+  "createdAt": "2026-04-12T18:00:00Z"
+}
+```
+
+The `generationService` field tracks which service created the result. The `source` field tracks what kind of style it was based on.
+
+Use the `save_generation` tool to add your results to the user's timeline.

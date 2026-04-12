@@ -3,18 +3,18 @@ title: "Sign in with Appearance"
 description: "OAuth-based identity that shares how someone looks — not just an email address."
 ---
 
-Sign in with Appearance is an OAuth 2.0 flow that lets users share their appearance data with your app. When a user connects, your app immediately knows what they look like. No questionnaires. No photo uploads. No cold start.
+Sign in with Appearance is an OAuth 2.1 flow that lets users share their Appearance ID with your app. When a user connects, your app immediately knows what they look like.
 
 ## What makes it different
 
-Sign in with Google gives you an email and a name. Sign in with Appearance gives you a face shape, hair type, skin tone, and facial measurements. The user's experience is personalized from the first interaction.
+Sign in with Google gives you an email and a name. Sign in with Appearance gives you a face shape, hair type, skin tone, and visual reference photos. The user's experience is personalized from the first interaction.
 
 ## The flow
 
 1. User taps "Connect with Appearance" in your app
 2. Appearance opens, showing the user their own profile
 3. The user sees exactly what will be shared and approves
-4. Your app receives an access token and appearance data
+4. Your app receives an access token and Appearance ID data
 
 If the user doesn't have an Appearance profile, they create one during the flow. A scan takes about ten seconds.
 
@@ -22,9 +22,10 @@ If the user doesn't have an Appearance profile, they create one during the flow.
 
 | Scope | What you receive |
 |-------|-----------------|
-| `profile` | Username, display name, avatar |
-| `appearance:read` | Scan grid image and structured appearance data |
-| `appearance:photos` | Individual scan angle photos |
+| `appearance:read` | Face images (scan grid + angles) and Look descriptors |
+| `generations:read` | The user's generation history across all services |
+| `generations:write` | Ability to save generated results to the user's timeline |
+| `styles:search` | Search available styles from businesses on Appearance |
 
 Request only the scopes you need. Users see exactly what each scope includes before approving.
 
@@ -34,7 +35,7 @@ Request only the scopes you need. Users see exactly what each scope includes bef
 GET appearance.app/oauth/authorize
   ?client_id=YOUR_CLIENT_ID
   &redirect_uri=https://yourapp.com/callback
-  &scope=profile,appearance:read
+  &scope=appearance:read,generations:read
   &response_type=code
   &state=RANDOM_STATE
 ```
@@ -50,7 +51,7 @@ GET https://yourapp.com/callback
 Exchange the code for tokens:
 
 ```bash
-curl -X POST https://api.appearance.app/v1/oauth/token \
+curl -X POST https://appearance.app/api/oauth/token \
   -H "Content-Type: application/json" \
   -d '{
     "grant_type": "authorization_code",
@@ -66,42 +67,47 @@ curl -X POST https://api.appearance.app/v1/oauth/token \
   "access_token": "at_...",
   "refresh_token": "rt_...",
   "expires_in": 3600,
-  "scope": "profile appearance:read"
+  "scope": "appearance:read generations:read"
 }
 ```
 
 ## What you receive
 
-With `profile` and `appearance:read` scopes:
+With the `appearance:read` scope, calling `get_appearance` returns:
 
 ```json
 {
-  "user": {
-    "uid": "usr_k7Xm9pL2qR4v",
-    "username": "donaldm",
-    "displayName": "Donald"
-  },
-  "appearance": {
-    "scanGrid": "https://appearance.app/scans/usr_k7Xm/grid.jpg",
-    "faceShape": "oval",
-    "hair": {
-      "textureFamily": 3,
-      "textureLabel": "Curly",
-      "density": "thick",
-      "lengths": { "top": "short", "sides": "short" }
+  "userId": "usr_k7Xm9pL2qR4v",
+  "face": {
+    "scanGridUrl": "https://storage.../scan-grid.jpg",
+    "angles": {
+      "front": "https://storage.../front.jpg",
+      "left": "https://storage.../left.jpg",
+      "right": "https://storage.../right.jpg"
     },
+    "scannedAt": "2026-03-29T10:30:00Z"
+  },
+  "look": {
+    "faceShape": "oval",
     "skinTone": {
       "fitzpatrick": "Type V",
-      "undertone": "warm"
-    },
-    "measurements": {
-      "faceWidthMm": 142.3,
-      "jawWidthMm": 126.1,
-      "pdMm": 63.5
+      "undertone": "warm",
+      "description": "Warm medium-deep"
     },
     "audience": "masculine",
-    "analyzedAt": "2026-03-29T10:30:00Z"
-  }
+    "hair": {
+      "textureType": "3B",
+      "textureLabel": "Curly",
+      "density": "thick",
+      "naturalColor": "dark brown",
+      "currentColor": null,
+      "isColorTreated": false,
+      "lengths": { "top": "short", "sides": "short", "back": "short", "fringe": null },
+      "facialHair": { "hasBeard": true, "beardType": "stubble" }
+    },
+    "glasses": null
+  },
+  "updatedAt": "2026-03-29T10:30:00Z"
 }
 ```
 

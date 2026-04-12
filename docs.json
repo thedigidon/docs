@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
   "name": "Appearance Developer Platform",
-  "description": "The canonical appearance profile for every person. Build apps that understand how people look and want to look.",
+  "description": "Appearance ID — the portable visual identity for AI agents and apps.",
   "colors": {
     "primary": "#1A1A1A",
     "light": "#6A6A6A",
@@ -18,15 +18,21 @@
             "group": "Getting Started",
             "pages": [
               "index",
-              "quickstart",
-              "guides/agent-integration"
+              "quickstart"
             ]
           },
           {
             "group": "Core Concepts",
             "pages": [
+              "concepts/appearance-id",
               "concepts/sign-in",
-              "concepts/appearance-profile"
+              "concepts/zones"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/agent-integration"
             ]
           }
         ]
@@ -41,7 +47,7 @@
         {
           "anchor": "Appearance App",
           "href": "https://appearance.app",
-          "icon": "sparkles"
+          "icon": "arrow-up-right-from-square"
         }
       ]
     }
@@ -79,8 +85,7 @@
       "display": "interactive"
     },
     "examples": {
-      "languages": ["bash", "python", "javascript", "go"]
+      "languages": ["bash", "python", "javascript"]
     }
   }
 }
-

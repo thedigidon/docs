@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Appearance API",
-    "description": "Access structured appearance data for any consenting user.",
-    "version": "0.1.0",
+    "description": "Access a user's Appearance ID — their portable visual identity. Face images and structured Look descriptors, available via MCP or REST.",
+    "version": "0.2.0",
     "contact": {
       "name": "Appearance Developer Support",
       "email": "developers@appearance.app"
@@ -11,51 +11,29 @@
   },
   "servers": [
     {
-      "url": "https://api.appearance.app/v1",
+      "url": "https://appearance.app/api",
       "description": "Production"
     }
   ],
   "security": [
     {
-      "apiKey": [],
       "bearerAuth": []
     }
   ],
   "paths": {
-    "/users/me/appearance": {
+    "/v1/users/me/appearance": {
       "get": {
-        "summary": "Get user's appearance",
-        "description": "Returns the authenticated user's current appearance — scan grid image, structured face and hair data, skin tone, and facial measurements.",
-        "operationId": "getUserAppearance",
-        "tags": ["Users"],
+        "summary": "Get user's Appearance ID",
+        "description": "Returns the authenticated user's Appearance ID — Face (scan images) and Look (structured descriptors).",
+        "operationId": "getAppearance",
+        "tags": ["Appearance ID"],
         "responses": {
           "200": {
-            "description": "The user's appearance data",
+            "description": "The user's Appearance ID",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Appearance"
-                },
-                "example": {
-                  "scanGrid": "https://appearance.app/scans/usr_k7Xm/grid.jpg",
-                  "faceShape": "oval",
-                  "hair": {
-                    "textureFamily": 3,
-                    "textureLabel": "Curly",
-                    "density": "thick",
-                    "lengths": { "top": "short", "sides": "short" }
-                  },
-                  "skinTone": {
-                    "fitzpatrick": "Type V",
-                    "undertone": "warm"
-                  },
-                  "measurements": {
-                    "faceWidthMm": 142.3,
-                    "jawWidthMm": 126.1,
-                    "pdMm": 63.5
-                  },
-                  "audience": "masculine",
-                  "analyzedAt": "2026-03-29T10:30:00Z"
+                  "$ref": "#/components/schemas/AppearanceId"
                 }
               }
             }
@@ -67,47 +45,74 @@
         }
       }
     },
-    "/scans/initiate": {
+    "/v1/users/me/generations": {
+      "get": {
+        "summary": "List generations",
+        "description": "Returns the user's generation history across all zones and sources.",
+        "operationId": "listGenerations",
+        "tags": ["Generations"],
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["hair", "glasses"] },
+            "description": "Filter by appearance zone"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 },
+            "description": "Maximum results to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of generations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "generations": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Generation" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
       "post": {
-        "summary": "Initiate a scan session",
-        "description": "Creates a scan session for a user who doesn't have an Appearance profile yet. Returns a URL where the user can complete a face scan. Your app receives a callback when the profile is ready.",
-        "operationId": "initiateScan",
-        "tags": ["Scans"],
+        "summary": "Save generation",
+        "description": "Save an AI-generated appearance result to the user's unified timeline.",
+        "operationId": "saveGeneration",
+        "tags": ["Generations"],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": ["imageUrl", "zone"],
                 "properties": {
-                  "redirectUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "Where to redirect the user after scan completion"
-                  },
-                  "webhookUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "URL to receive a callback when the profile is ready"
-                  }
+                  "imageUrl": { "type": "string", "format": "uri", "description": "URL of the generated image" },
+                  "zone": { "type": "string", "enum": ["hair", "glasses"], "description": "Appearance zone" },
+                  "styleName": { "type": "string", "description": "Human-readable name for this look" },
+                  "sourceStyleId": { "type": "string", "description": "Appearance style ID if based on a business style" }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Scan session created",
+          "201": {
+            "description": "Generation saved",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScanSession"
-                },
-                "example": {
-                  "sessionId": "scan_k7Xm9pL2qR4v",
-                  "scanUrl": "https://appearance.app/scan?session=scan_k7Xm9pL2qR4v",
-                  "expiresAt": "2026-03-29T11:30:00Z"
-                }
+                "schema": { "$ref": "#/components/schemas/Generation" }
               }
             }
           },
@@ -118,12 +123,6 @@
   },
   "components": {
     "securitySchemes": {
-      "apiKey": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "X-Appearance-API-Key",
-        "description": "Your Appearance API key (ak_...)"
-      },
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
@@ -132,58 +131,100 @@
     },
     "responses": {
       "Unauthorized": {
-        "description": "Missing or invalid API key or user token"
+        "description": "Missing or invalid bearer token"
       }
     },
     "schemas": {
-      "Appearance": {
+      "AppearanceId": {
         "type": "object",
-        "description": "A user's current appearance data from their most recent scan.",
+        "description": "A user's Appearance ID — Face images and Look descriptors.",
         "properties": {
-          "scanGrid": { "type": "string", "format": "uri", "description": "Signed URL to the 2x2 scan grid image" },
+          "userId": { "type": "string" },
+          "face": { "$ref": "#/components/schemas/Face" },
+          "look": { "$ref": "#/components/schemas/Look" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Face": {
+        "type": "object",
+        "description": "The user's face reference images.",
+        "properties": {
+          "scanGridUrl": { "type": "string", "format": "uri", "description": "Signed URL to the 2x2 scan grid" },
+          "angles": {
+            "type": "object",
+            "properties": {
+              "front": { "type": "string", "format": "uri" },
+              "left": { "type": "string", "format": "uri" },
+              "right": { "type": "string", "format": "uri" }
+            }
+          },
+          "scannedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Look": {
+        "type": "object",
+        "description": "Structured appearance descriptors — facts about how the user looks.",
+        "properties": {
           "faceShape": { "type": "string", "enum": ["oval", "round", "square", "diamond", "heart", "oblong"] },
+          "skinTone": {
+            "type": "object",
+            "properties": {
+              "fitzpatrick": { "type": "string" },
+              "undertone": { "type": "string", "enum": ["warm", "cool", "neutral"] },
+              "description": { "type": "string" }
+            }
+          },
+          "audience": { "type": "string", "enum": ["masculine", "feminine", "androgynous"] },
           "hair": {
             "type": "object",
             "properties": {
-              "textureFamily": { "type": "integer", "description": "Andre Walker scale: 1 (straight), 2 (wavy), 3 (curly), 4 (coily)" },
-              "textureLabel": { "type": "string", "description": "Human-readable texture name" },
+              "textureType": { "type": "string", "description": "Andre Walker subtype (1A–4C)" },
+              "textureLabel": { "type": "string", "enum": ["Straight", "Wavy", "Curly", "Coily"] },
               "density": { "type": "string", "enum": ["thin", "medium", "thick"] },
+              "naturalColor": { "type": "string" },
+              "currentColor": { "type": "string", "nullable": true },
+              "isColorTreated": { "type": "boolean" },
               "lengths": {
                 "type": "object",
                 "properties": {
                   "top": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] },
-                  "sides": { "type": "string", "enum": ["bald", "stubble", "short", "medium", "long"] }
+                  "sides": { "type": "string" },
+                  "back": { "type": "string" },
+                  "fringe": { "type": "string", "nullable": true }
+                }
+              },
+              "facialHair": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "hasBeard": { "type": "boolean" },
+                  "beardType": { "type": "string" }
                 }
               }
             }
           },
-          "skinTone": {
+          "glasses": {
             "type": "object",
+            "nullable": true,
             "properties": {
-              "fitzpatrick": { "type": "string", "description": "Fitzpatrick scale classification" },
-              "undertone": { "type": "string", "enum": ["warm", "cool", "neutral"] }
+              "frameSize": { "type": "string", "enum": ["small", "medium", "large", "extra-large"] },
+              "wearsPrescription": { "type": "boolean" }
             }
-          },
-          "measurements": {
-            "type": "object",
-            "description": "Physical measurements from ARKit facial geometry, in millimeters",
-            "properties": {
-              "faceWidthMm": { "type": "number" },
-              "jawWidthMm": { "type": "number" },
-              "pdMm": { "type": "number", "description": "Pupillary distance" }
-            }
-          },
-          "audience": { "type": "string", "enum": ["masculine", "feminine", "androgynous"] },
-          "analyzedAt": { "type": "string", "format": "date-time" }
+          }
         }
       },
-      "ScanSession": {
+      "Generation": {
         "type": "object",
-        "description": "A session for creating a new Appearance profile via face scan.",
+        "description": "A single try-on result from any source.",
         "properties": {
-          "sessionId": { "type": "string", "description": "Unique session identifier" },
-          "scanUrl": { "type": "string", "format": "uri", "description": "URL for the user to complete their scan" },
-          "expiresAt": { "type": "string", "format": "date-time" }
+          "id": { "type": "string" },
+          "zone": { "type": "string" },
+          "imageUrl": { "type": "string", "format": "uri" },
+          "thumbnailUrl": { "type": "string", "format": "uri", "nullable": true },
+          "source": { "type": "string", "description": "What type of style (business_style, user, remix)" },
+          "generationService": { "type": "string", "description": "Which service generated this (appearance, chatgpt, claude)" },
+          "styleName": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
         }
       }
     }

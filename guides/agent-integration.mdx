@@ -1,20 +1,26 @@
 ---
 title: "For AI Agents"
-description: "How any AI agent can discover and use Appearance data."
+description: "How any AI agent can connect to a user's Appearance ID."
 ---
 
-Any agent that needs to know what a user looks like can integrate with Appearance through standard protocols.
+Appearance ID is built for AI agents. Any agent that needs to know what a user looks like can connect through the MCP server and access structured appearance data.
 
-## Discovery
+## Connect via MCP
 
-### MCP Server
-
-Appearance exposes a [Model Context Protocol](https://modelcontextprotocol.io) server. Any MCP-compatible client can query documentation and API definitions directly.
+The Appearance API is an MCP server at `https://appearance.app/api/mcp`. Any MCP-compatible client can discover and call tools.
 
 <Tabs>
+  <Tab title="ChatGPT">
+    Register as a ChatGPT app via the Apps SDK. The MCP endpoint is:
+    ```
+    https://appearance.app/api/mcp
+    ```
+    ChatGPT will discover available tools automatically via `tools/list`.
+  </Tab>
   <Tab title="Claude Code">
     ```bash
-    claude mcp add --transport http appearance https://docs.appearance.app/mcp
+    claude mcp add --transport http appearance https://appearance.app/api/mcp \
+      --header "Authorization: Bearer YOUR_TOKEN"
     ```
   </Tab>
   <Tab title="Cursor">
@@ -22,7 +28,10 @@ Appearance exposes a [Model Context Protocol](https://modelcontextprotocol.io) s
     {
       "mcpServers": {
         "appearance": {
-          "url": "https://docs.appearance.app/mcp"
+          "url": "https://appearance.app/api/mcp",
+          "headers": {
+            "Authorization": "Bearer YOUR_TOKEN"
+          }
         }
       }
     }
@@ -34,7 +43,10 @@ Appearance exposes a [Model Context Protocol](https://modelcontextprotocol.io) s
       "servers": {
         "appearance": {
           "type": "http",
-          "url": "https://docs.appearance.app/mcp"
+          "url": "https://appearance.app/api/mcp",
+          "headers": {
+            "Authorization": "Bearer YOUR_TOKEN"
+          }
         }
       }
     }
@@ -42,79 +54,93 @@ Appearance exposes a [Model Context Protocol](https://modelcontextprotocol.io) s
   </Tab>
 </Tabs>
 
+## Available tools
+
+| Tool | Scope | Description |
+|------|-------|-------------|
+| `get_appearance` | `appearance:read` | Get the user's Face (images) + Look (descriptors) |
+| `get_scan_grid` | `appearance:read` | Get just the face reference images |
+| `search_styles` | `styles:search` | Search styles from businesses on Appearance |
+| `save_generation` | `generations:write` | Save a generated result to the user's timeline |
+| `list_generations` | `generations:read` | List the user's generation history |
+
+## How agents use Appearance ID
+
+### Visual generation
+
+The primary use case. The agent reads the user's Face and uses it as reference for image generation with the agent's own models.
+
+```
+User: "What would I look like with curtain bangs?"
+Agent: [calls get_appearance → receives face scan + look data]
+Agent: [generates image using GPT-4o / Claude / own model with face as reference]
+Agent: [calls save_generation → result stored in user's Appearance timeline]
+Agent: "Here's how you'd look. I've saved it to your Appearance profile."
+```
+
+### Personalizing other tasks
+
+The agent reads Look descriptors to personalize work that isn't directly about appearance.
+
+```
+Agent building a travel packing list:
+  → Calls get_appearance
+  → Reads hair.textureLabel = "Curly", hair.density = "thick"
+  → Includes curl-friendly travel products in recommendations
+```
+
+### Saving results back
+
+After generating an image, save it to the user's unified timeline:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "save_generation",
+    "arguments": {
+      "imageUrl": "https://your-service.com/generated/abc123.jpg",
+      "zone": "hair",
+      "styleName": "Curtain Bangs"
+    }
+  }
+}
+```
+
+The result appears in the user's Appearance app alongside results from every other connected service.
+
+## Authentication
+
+The MCP server uses Bearer token authentication. In development, use your dev token. In production, OAuth 2.1 with PKCE handles user authentication.
+
+```
+Authorization: Bearer YOUR_TOKEN
+```
+
+## Discovery
+
 ### llms.txt
 
 Full documentation as a single markdown file:
 
 ```
-https://docs.appearance.app/llms.txt
-https://docs.appearance.app/llms-full.txt
+https://appearance.mintlify.app/llms.txt
+https://appearance.mintlify.app/llms-full.txt
 ```
 
 ### OpenAPI
 
-Machine-readable API contract for automatic tool generation:
+Machine-readable API contract:
 
 ```
-https://docs.appearance.app/api-reference/openapi.json
+https://appearance.mintlify.app/api-reference/openapi.json
 ```
-
-## How agents use Appearance
-
-### Reading appearance data
-
-The agent calls the API with the user's token and receives structured data it can use directly.
-
-```
-User: "What kind of glasses would suit me?"
-Agent: [calls GET /v1/users/me/appearance]
-Agent: "You have an oval face shape with a face width of 142mm.
-        Medium frames with a bridge width around 18mm would fit well."
-```
-
-### Enriching other tasks
-
-The agent reads appearance data to personalize work that isn't directly about appearance.
-
-```
-Agent building a travel packing list:
-  → Reads user's appearance data
-  → Knows user has curly hair, type 3B
-  → Includes curl-friendly travel products
-```
-
-### Creating an appearance
-
-If the user doesn't have an Appearance profile, the agent can initiate one.
-
-```bash
-curl -X POST https://api.appearance.app/v1/scans/initiate \
-  -H "X-Appearance-API-Key: ak_your_key" \
-  -d '{ "redirectUrl": "https://yourapp.com/callback" }'
-```
-
-```json
-{
-  "sessionId": "scan_k7Xm9pL2qR4v",
-  "scanUrl": "https://appearance.app/scan?session=scan_k7Xm9pL2qR4v",
-  "expiresAt": "2026-03-29T11:30:00Z"
-}
-```
-
-The user opens `scanUrl`, completes a ten-second face scan, and your app receives a callback when their profile is ready.
-
-## Authentication
-
-| Header | Purpose |
-|--------|---------|
-| `X-Appearance-API-Key: ak_...` | Identifies your app |
-| `Authorization: Bearer at_...` | Identifies the consenting user |
-
-Both headers are required for all user-scoped requests.
 
 ## Rate limits
 
 | Scope | Limit |
 |-------|-------|
-| Per API key | 60 requests/minute |
-| Per user token | 120 requests/minute |
+| Per token | 60 requests/minute |
+| Per user | 120 requests/minute |
