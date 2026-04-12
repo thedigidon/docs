@@ -1,62 +1,31 @@
 ---
 title: "For AI Agents"
-description: "How any AI agent can connect to a user's Appearance ID."
+description: "Connect any AI agent to a user's Appearance ID."
 ---
 
-Any agent that needs to generate images of a user can connect through the Appearance MCP server and receive their reference photos.
+Any agent that generates images of people can connect to Appearance ID and receive reference photos of the user.
 
-## Connect via MCP
+## Connect
 
 The Appearance API is an MCP server at `https://appearance.app/api/mcp`.
 
-<Tabs>
-  <Tab title="ChatGPT">
-    Register as a ChatGPT app. The MCP endpoint is:
-    ```
-    https://appearance.app/api/mcp
-    ```
-  </Tab>
-  <Tab title="Claude Code">
-    ```bash
-    claude mcp add --transport http appearance https://appearance.app/api/mcp \
-      --header "Authorization: Bearer YOUR_TOKEN"
-    ```
-  </Tab>
-  <Tab title="Cursor">
-    ```json
-    {
-      "mcpServers": {
-        "appearance": {
-          "url": "https://appearance.app/api/mcp",
-          "headers": {
-            "Authorization": "Bearer YOUR_TOKEN"
-          }
-        }
-      }
-    }
-    ```
-  </Tab>
-</Tabs>
-
-## Example flow
+## Example
 
 ```
 User: "What would I look like with a buzz cut?"
 Agent: [calls get_appearance → receives reference photos]
 Agent: [generates image using own model with photos as reference]
 Agent: [calls save_generation → result stored in user's profile]
-Agent: "Here's how you'd look. Saved to your Appearance profile."
 ```
 
-## Available tools
+## Tools
 
 | Tool | Description |
 |------|-------------|
 | `get_appearance` | Get the user's reference photos |
-| `get_scan_grid` | Get just the scan grid image |
-| `save_generation` | Save a generated result to the user's profile |
+| `save_generation` | Save a generated image to the user's profile |
 | `list_generations` | Browse the user's generation history |
-| `search_styles` | Search styles from businesses on Appearance |
+| `search_styles` | Search styles on Appearance |
 
 ## Discovery
 

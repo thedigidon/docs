@@ -7,22 +7,21 @@ description: "Connect to the Appearance API in under five minutes."
   The Appearance API is in private beta. Request access at developers@appearance.app.
 </Note>
 
-## 1. Get a dev token
+## 1. Get a token
 
 Request API access to receive your bearer token.
 
-## 2. Connect your MCP client
+## 2. Connect
 
 <Tabs>
   <Tab title="ChatGPT">
-    Register the Appearance MCP server as a ChatGPT app connector:
     ```
     URL: https://appearance.app/api/mcp
     Transport: HTTP POST
     Auth: Bearer token
     ```
   </Tab>
-  <Tab title="Claude Code">
+  <Tab title="Claude">
     ```bash
     claude mcp add --transport http appearance https://appearance.app/api/mcp \
       --header "Authorization: Bearer YOUR_TOKEN"
@@ -46,50 +45,52 @@ Request API access to receive your bearer token.
 
 ## 3. Get the user's photos
 
-Call `get_appearance` to receive the user's reference photos:
+```json
+{
+  "method": "tools/call",
+  "params": { "name": "get_appearance", "arguments": {} }
+}
+```
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "get_appearance",
-    "arguments": {}
+  "ok": true,
+  "data": {
+    "photos": [
+      "https://appearance.app/photos/usr_k7Xm/1.jpg",
+      "https://appearance.app/photos/usr_k7Xm/2.jpg",
+      "https://appearance.app/photos/usr_k7Xm/3.jpg",
+      "https://appearance.app/photos/usr_k7Xm/4.jpg"
+    ],
+    "updatedAt": "2026-03-29T10:30:00Z"
   }
 }
 ```
 
-You'll receive multi-angle photos and a composite scan grid. Use these as reference to generate images of the user with your own models.
+Use these photos as reference to generate images of the user with your own models.
 
-## 4. Save results back
-
-After generating an image, store it in the user's profile:
+## 4. Save the result
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 2,
   "method": "tools/call",
   "params": {
     "name": "save_generation",
     "arguments": {
       "imageUrl": "https://your-service.com/generated/abc123.jpg",
-      "zone": "hair",
-      "styleName": "Curtain Bangs"
+      "zone": "hair"
     }
   }
 }
 ```
 
-The result appears in the user's Appearance app alongside results from every other connected service.
+The result appears in the user's Appearance profile alongside results from every other connected service.
 
-## Available tools
+## Tools
 
 | Tool | Description |
 |------|-------------|
 | `get_appearance` | Get the user's reference photos |
-| `get_scan_grid` | Get just the scan grid image |
-| `save_generation` | Save a generated result to the user's profile |
+| `save_generation` | Save a generated image to the user's profile |
 | `list_generations` | Browse the user's generation history |
-| `search_styles` | Search styles from businesses on Appearance |
+| `search_styles` | Search styles on Appearance |

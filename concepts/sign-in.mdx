@@ -1,29 +1,26 @@
 ---
 title: "Sign in with Appearance"
-description: "OAuth-based identity that shares what someone looks like."
+description: "Let users share what they look like with your service."
 ---
 
-Sign in with Appearance lets users share their reference photos with your service. When a user connects, you can immediately generate images of them.
+Sign in with Appearance lets users share their reference photos with your service. One tap, no uploads.
 
 ## The flow
 
-1. User taps "Connect with Appearance" in your app
-2. Appearance shows the user what will be shared
-3. The user approves
-4. Your service receives an access token and can call the API
+1. User taps "Connect with Appearance"
+2. They see what will be shared and approve
+3. Your service receives an access token and can call the API
 
-If the user doesn't have an Appearance profile yet, they create one during the flow. A scan takes about ten seconds.
+If the user doesn't have an Appearance ID yet, they create one during the flow.
 
 ## Scopes
 
 | Scope | What you receive |
 |-------|-----------------|
-| `appearance:read` | Reference photos from the user's face scan |
+| `appearance:read` | Reference photos of the user |
 | `generations:read` | The user's generation history |
-| `generations:write` | Ability to save results to the user's profile |
-| `styles:search` | Search styles from businesses on Appearance |
-
-Request only the scopes you need.
+| `generations:write` | Save results to the user's profile |
+| `styles:search` | Search styles on Appearance |
 
 ## Authorization
 
@@ -31,9 +28,8 @@ Request only the scopes you need.
 GET appearance.app/oauth/authorize
   ?client_id=YOUR_CLIENT_ID
   &redirect_uri=https://yourapp.com/callback
-  &scope=appearance:read,generations:read
+  &scope=appearance:read
   &response_type=code
-  &state=RANDOM_STATE
 ```
 
 Exchange the code for tokens:

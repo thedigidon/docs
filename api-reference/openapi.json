@@ -5,7 +5,6 @@
     "description": "Access a user's Appearance ID — reference photos for visual generation.",
     "version": "0.2.0",
     "contact": {
-      "name": "Appearance Developer Support",
       "email": "developers@appearance.app"
     }
   },
@@ -16,65 +15,47 @@
     }
   ],
   "security": [
-    {
-      "bearerAuth": []
-    }
+    { "bearerAuth": [] }
   ],
   "paths": {
     "/v1/users/me/appearance": {
       "get": {
-        "summary": "Get user's Appearance ID",
-        "description": "Returns the authenticated user's reference photos from their most recent face scan.",
+        "summary": "Get Appearance ID",
+        "description": "Returns the user's reference photos.",
         "operationId": "getAppearance",
         "tags": ["Appearance ID"],
         "responses": {
           "200": {
-            "description": "The user's reference photos",
+            "description": "Reference photos",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AppearanceId"
-                }
+                "schema": { "$ref": "#/components/schemas/AppearanceId" }
               }
             }
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
-          "404": {
-            "description": "User has no scan (no photos available)"
-          }
+          "404": { "description": "No photos available" }
         }
       }
     },
     "/v1/users/me/generations": {
       "get": {
         "summary": "List generations",
-        "description": "Returns the user's generation history across all services.",
+        "description": "Returns the user's generation history.",
         "operationId": "listGenerations",
         "tags": ["Generations"],
         "parameters": [
-          {
-            "name": "zone",
-            "in": "query",
-            "schema": { "type": "string", "enum": ["hair", "glasses"] }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
-          }
+          { "name": "zone", "in": "query", "schema": { "type": "string", "enum": ["hair", "glasses"] } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } }
         ],
         "responses": {
           "200": {
-            "description": "List of generations",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "generations": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/Generation" }
-                    }
+                    "generations": { "type": "array", "items": { "$ref": "#/components/schemas/Generation" } }
                   }
                 }
               }
@@ -106,7 +87,6 @@
         },
         "responses": {
           "201": {
-            "description": "Generation saved",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Generation" }
@@ -122,47 +102,33 @@
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
-        "scheme": "bearer",
-        "description": "Access token from Sign in with Appearance"
+        "scheme": "bearer"
       }
     },
     "responses": {
       "Unauthorized": {
-        "description": "Missing or invalid bearer token"
+        "description": "Missing or invalid token"
       }
     },
     "schemas": {
       "AppearanceId": {
         "type": "object",
-        "description": "A user's reference photos from their face scan.",
         "properties": {
-          "userId": { "type": "string" },
-          "face": {
-            "type": "object",
-            "properties": {
-              "scanGridUrl": { "type": "string", "format": "uri", "description": "2x2 composite scan grid" },
-              "angles": {
-                "type": "object",
-                "properties": {
-                  "front": { "type": "string", "format": "uri" },
-                  "left": { "type": "string", "format": "uri" },
-                  "right": { "type": "string", "format": "uri" }
-                }
-              },
-              "scannedAt": { "type": "string", "format": "date-time" }
-            }
+          "photos": {
+            "type": "array",
+            "items": { "type": "string", "format": "uri" },
+            "description": "Reference photos of the user"
           },
           "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
       "Generation": {
         "type": "object",
-        "description": "A generated image from any service.",
         "properties": {
           "id": { "type": "string" },
           "zone": { "type": "string" },
           "imageUrl": { "type": "string", "format": "uri" },
-          "generationService": { "type": "string", "description": "Which service generated this (appearance, chatgpt, claude)" },
+          "generationService": { "type": "string" },
           "styleName": { "type": "string", "nullable": true },
           "createdAt": { "type": "string", "format": "date-time" }
         }

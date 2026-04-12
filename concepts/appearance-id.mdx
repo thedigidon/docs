@@ -7,25 +7,24 @@ When a user connects their Appearance ID, you receive reference photos of them.
 
 ## Photos
 
-Multi-angle photos from the user's most recent face scan:
+An array of reference images showing what the user currently looks like. These are high-quality photos suitable for use as generation input.
 
-- **Scan grid** — A 2x2 composite showing front, left, right, and expression angles
-- **Individual angles** — Separate front, left, and right photos
+```json
+{
+  "photos": [
+    "https://appearance.app/photos/usr_k7Xm/1.jpg",
+    "https://appearance.app/photos/usr_k7Xm/2.jpg",
+    "https://appearance.app/photos/usr_k7Xm/3.jpg",
+    "https://appearance.app/photos/usr_k7Xm/4.jpg"
+  ],
+  "updatedAt": "2026-03-29T10:30:00Z"
+}
+```
 
-URLs are signed and short-lived. Cache the images if you need them beyond a single session.
+Photo URLs are signed and temporary. Cache the images if you need them beyond a single session.
 
 ## Generations
 
-Every image generated using a user's Appearance ID — from any service — is stored in their profile. The user sees a unified timeline:
+Every image generated using a user's Appearance ID — from any service — is stored in their profile.
 
-```
-Buzz Cut Fade        via Appearance · Apr 12
-Curtain Bangs        via ChatGPT · Apr 11
-Round Frames         via Claude · Apr 10
-```
-
-Use `save_generation` to add your results. Use `list_generations` to see what's been created before.
-
-## What's not included
-
-Appearance captures structured data internally — hair type, face shape, skin tone, measurements, compatibility scoring. This data powers the Appearance app but is not shared through the API in the current version.
+Use `save_generation` to add your results. Use `list_generations` to see what's been created.
